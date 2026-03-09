@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Stats Report (Individual Fact)</title>
+<style>
+    :root {
+      --ink: #102542;
+      --muted: #5f6c7b;
+      --line: #dce4ee;
+      --card: #ffffff;
+      --bg-soft: #f6f9fc;
+      --accent: #1f4e79;
+      --accent-soft: #eaf2fa;
+      --stripe: #fafcff;
+    }
+
+    @page {
+      size: A4 landscape;
+      margin: 12mm;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 10pt;
+      background: white;
+    }
+
+    .report {
+      width: 100%;
+    }
+
+    .report-header {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: linear-gradient(180deg, #ffffff 0%, var(--bg-soft) 100%);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+    }
+
+    .report-title {
+      margin: 0 0 8px 0;
+      font-size: 19pt;
+      line-height: 1.2;
+      color: #0f3558;
+      letter-spacing: 0.2px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 20px;
+      font-size: 9.3pt;
+    }
+
+    .meta-label {
+      color: var(--muted);
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    h2 {
+      margin: 14px 0 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--line);
+      color: var(--accent);
+      font-size: 13pt;
+      letter-spacing: 0.1px;
+      page-break-after: avoid;
+    }
+
+    p.note {
+      margin: 6px 0;
+      color: var(--ink);
+      font-size: 10pt;
+    }
+
+    .table-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 6px 0 10px;
+      background: var(--card);
+      page-break-inside: avoid;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 8.8pt;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead th {
+      background: var(--accent);
+      color: #ffffff;
+      text-align: left;
+      font-weight: 700;
+      padding: 6px 7px;
+      border-right: 1px solid rgba(255, 255, 255, 0.20);
+      line-height: 1.25;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    thead th:last-child {
+      border-right: none;
+    }
+
+    tbody td {
+      border-top: 1px solid #e8eef5;
+      padding: 5px 7px;
+      vertical-align: top;
+      line-height: 1.3;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: var(--stripe);
+    }
+
+    td.num,
+    th.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rowcount {
+      border-top: 1px solid var(--line);
+      background: var(--accent-soft);
+      color: #38526e;
+      font-size: 8.2pt;
+      text-align: right;
+      padding: 5px 8px;
+      font-weight: 600;
+    }
+
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    </style>
+</head>
+<body>
+<main class="report">
+<header class="report-header">
+<h1 class="report-title">Team Stats Report (Individual Fact)</h1>
+<div class="meta-grid">
+<div><span class="meta-label">Report Type:</span>Team</div>
+<div><span class="meta-label">Name:</span>Christiansbjerg</div>
+<div><span class="meta-label">Season Filter:</span>2025</div>
+<div><span class="meta-label">Database:</span>badminton_dw_individual</div>
+<div><span class="meta-label">Generated:</span>2026-03-07 00:07:12</div>
+</div>
+</header>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="">requested_team</th>
+<th class="num">requested_season_id</th>
+<th class="num">matched_individual_rows</th>
+<th class="num">matched_team_matches</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="">Christiansbjerg</td>
+<td class="num">2025</td>
+<td class="num">117</td>
+<td class="num">9</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(1 row)</div>
+</div>
+<h2>Overall Summary</h2>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="">team_name</th>
+<th class="num">team_matches_played</th>
+<th class="num">team_match_wins</th>
+<th class="num">team_match_losses</th>
+<th class="num">team_match_draws</th>
+<th class="num">team_match_win_pct</th>
+<th class="num">total_disciplines_won</th>
+<th class="num">total_disciplines_lost</th>
+<th class="num">individual_matches_played</th>
+<th class="num">individual_wins</th>
+<th class="num">individual_losses</th>
+<th class="num">individual_win_pct</th>
+<th class="num">walkovers_played</th>
+<th class="num">walkovers_won</th>
+<th class="num">non_walkover_matches</th>
+<th class="num">non_walkover_wins</th>
+<th class="num">non_walkover_win_pct</th>
+<th class="num">sets_won</th>
+<th class="num">sets_lost</th>
+<th class="num">set_win_pct</th>
+<th class="num">points_won</th>
+<th class="num">points_lost</th>
+<th class="num">point_win_pct</th>
+<th class="num">three_set_matches</th>
+<th class="num">three_set_wins</th>
+<th class="num">three_set_win_pct</th>
+<th class="num">avg_set_margin</th>
+<th class="num">avg_point_margin</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="">Christiansbjerg</td>
+<td class="num">9</td>
+<td class="num">3</td>
+<td class="num">6</td>
+<td class="num">0</td>
+<td class="num">33.33</td>
+<td class="num">48</td>
+<td class="num">69</td>
+<td class="num">117</td>
+<td class="num">48</td>
+<td class="num">69</td>
+<td class="num">41.03</td>
+<td class="num">14</td>
+<td class="num">10</td>
+<td class="num">103</td>
+<td class="num">38</td>
+<td class="num">36.89</td>
+<td class="num">92</td>
+<td class="num">140</td>
+<td class="num">39.66</td>
+<td class="num">3958</td>
+<td class="num">4184</td>
+<td class="num">48.61</td>
+<td class="num">25</td>
+<td class="num">9</td>
+<td class="num">36.00</td>
+<td class="num">-0.41</td>
+<td class="num">-1.93</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(1 row)</div>
+</div>
+<h2>Discipline Pivot (overall + discipline columns)</h2>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="">metric</th>
+<th class="num">overall</th>
+<th class="num">hs</th>
+<th class="num">ds</th>
+<th class="num">hd</th>
+<th class="num">dd</th>
+<th class="num">md</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="">matches</td>
+<td class="num">117</td>
+<td class="num">36</td>
+<td class="num">18</td>
+<td class="num">27</td>
+<td class="num">18</td>
+<td class="num">18</td>
+</tr>
+<tr>
+<td class="">wins</td>
+<td class="num">48</td>
+<td class="num">5</td>
+<td class="num">15</td>
+<td class="num">9</td>
+<td class="num">10</td>
+<td class="num">9</td>
+</tr>
+<tr>
+<td class="">losses</td>
+<td class="num">69</td>
+<td class="num">31</td>
+<td class="num">3</td>
+<td class="num">18</td>
+<td class="num">8</td>
+<td class="num">9</td>
+</tr>
+<tr>
+<td class="">win_pct</td>
+<td class="num">41.03</td>
+<td class="num">13.89</td>
+<td class="num">83.33</td>
+<td class="num">33.33</td>
+<td class="num">55.56</td>
+<td class="num">50.00</td>
+</tr>
+<tr>
+<td class="">sets_won</td>
+<td class="num">92</td>
+<td class="num">16</td>
+<td class="num">20</td>
+<td class="num">23</td>
+<td class="num">14</td>
+<td class="num">19</td>
+</tr>
+<tr>
+<td class="">sets_lost</td>
+<td class="num">140</td>
+<td class="num">63</td>
+<td class="num">6</td>
+<td class="num">40</td>
+<td class="num">12</td>
+<td class="num">19</td>
+</tr>
+<tr>
+<td class="">set_win_pct</td>
+<td class="num">39.66</td>
+<td class="num">20.25</td>
+<td class="num">76.92</td>
+<td class="num">36.51</td>
+<td class="num">53.85</td>
+<td class="num">50.00</td>
+</tr>
+<tr>
+<td class="">points_won</td>
+<td class="num">3958</td>
+<td class="num">1159</td>
+<td class="num">482</td>
+<td class="num">1112</td>
+<td class="num">493</td>
+<td class="num">712</td>
+</tr>
+<tr>
+<td class="">points_lost</td>
+<td class="num">4184</td>
+<td class="num">1570</td>
+<td class="num">368</td>
+<td class="num">1184</td>
+<td class="num">394</td>
+<td class="num">668</td>
+</tr>
+<tr>
+<td class="">point_win_pct</td>
+<td class="num">48.61</td>
+<td class="num">42.47</td>
+<td class="num">56.71</td>
+<td class="num">48.43</td>
+<td class="num">55.58</td>
+<td class="num">51.59</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(10 rows)</div>
+</div>
+<h2>Home vs Away (Team Match Level)</h2>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="num">home_team_matches</th>
+<th class="num">home_team_match_wins</th>
+<th class="num">home_team_match_draws</th>
+<th class="num">home_team_match_win_pct</th>
+<th class="num">away_team_matches</th>
+<th class="num">away_team_match_wins</th>
+<th class="num">away_team_match_draws</th>
+<th class="num">away_team_match_win_pct</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="num">4</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">25.00</td>
+<td class="num">5</td>
+<td class="num">2</td>
+<td class="num">0</td>
+<td class="num">40.00</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(1 row)</div>
+</div>
+<h2>Opponent Breakdown (Team Match Level)</h2>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="">opponent_team_name</th>
+<th class="num">team_matches</th>
+<th class="num">team_match_wins</th>
+<th class="num">team_match_losses</th>
+<th class="num">team_match_draws</th>
+<th class="num">team_match_win_pct</th>
+<th class="num">disciplines_won</th>
+<th class="num">disciplines_lost</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="">Aarhus AB 3</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">4</td>
+<td class="num">9</td>
+</tr>
+<tr>
+<td class="">Aarhus Akademisk</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0</td>
+<td class="num">100.00</td>
+<td class="num">9</td>
+<td class="num">4</td>
+</tr>
+<tr>
+<td class="">Herning</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">6</td>
+<td class="num">7</td>
+</tr>
+<tr>
+<td class="">Højbjerg 5</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0</td>
+<td class="num">100.00</td>
+<td class="num">8</td>
+<td class="num">5</td>
+</tr>
+<tr>
+<td class="">Ikast 3</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">6</td>
+<td class="num">7</td>
+</tr>
+<tr>
+<td class="">Langhøj 2</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0</td>
+<td class="num">100.00</td>
+<td class="num">8</td>
+<td class="num">5</td>
+</tr>
+<tr>
+<td class="">Lindholm</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">1</td>
+<td class="num">12</td>
+</tr>
+<tr>
+<td class="">Silkeborg BK</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">2</td>
+<td class="num">11</td>
+</tr>
+<tr>
+<td class="">Svenstrup</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">1</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">4</td>
+<td class="num">9</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(9 rows)</div>
+</div>
+<h2>Winrate by Match Type (discipline_no + code)</h2>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="">match_type</th>
+<th class="">discipline_label</th>
+<th class="num">matches_played</th>
+<th class="num">wins</th>
+<th class="num">losses</th>
+<th class="num">win_pct</th>
+<th class="num">sets_won</th>
+<th class="num">sets_lost</th>
+<th class="num">set_win_pct</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="">1.dd</td>
+<td class="">1. DD</td>
+<td class="num">9</td>
+<td class="num">4</td>
+<td class="num">5</td>
+<td class="num">44.44</td>
+<td class="num">8</td>
+<td class="num">8</td>
+<td class="num">50.00</td>
+</tr>
+<tr>
+<td class="">1.ds</td>
+<td class="">1. DS</td>
+<td class="num">9</td>
+<td class="num">7</td>
+<td class="num">2</td>
+<td class="num">77.78</td>
+<td class="num">10</td>
+<td class="num">3</td>
+<td class="num">76.92</td>
+</tr>
+<tr>
+<td class="">1.hd</td>
+<td class="">1. HD</td>
+<td class="num">9</td>
+<td class="num">1</td>
+<td class="num">8</td>
+<td class="num">11.11</td>
+<td class="num">3</td>
+<td class="num">17</td>
+<td class="num">15.00</td>
+</tr>
+<tr>
+<td class="">1.hs</td>
+<td class="">1. HS</td>
+<td class="num">9</td>
+<td class="num">0</td>
+<td class="num">9</td>
+<td class="num">0.00</td>
+<td class="num">1</td>
+<td class="num">18</td>
+<td class="num">5.26</td>
+</tr>
+<tr>
+<td class="">1.md</td>
+<td class="">1. MD</td>
+<td class="num">9</td>
+<td class="num">3</td>
+<td class="num">6</td>
+<td class="num">33.33</td>
+<td class="num">8</td>
+<td class="num">12</td>
+<td class="num">40.00</td>
+</tr>
+<tr>
+<td class="">2.dd</td>
+<td class="">2. DD</td>
+<td class="num">9</td>
+<td class="num">6</td>
+<td class="num">3</td>
+<td class="num">66.67</td>
+<td class="num">6</td>
+<td class="num">4</td>
+<td class="num">60.00</td>
+</tr>
+<tr>
+<td class="">2.ds</td>
+<td class="">2. DS</td>
+<td class="num">9</td>
+<td class="num">8</td>
+<td class="num">1</td>
+<td class="num">88.89</td>
+<td class="num">10</td>
+<td class="num">3</td>
+<td class="num">76.92</td>
+</tr>
+<tr>
+<td class="">2.hd</td>
+<td class="">2. HD</td>
+<td class="num">9</td>
+<td class="num">5</td>
+<td class="num">4</td>
+<td class="num">55.56</td>
+<td class="num">11</td>
+<td class="num">10</td>
+<td class="num">52.38</td>
+</tr>
+<tr>
+<td class="">2.hs</td>
+<td class="">2. HS</td>
+<td class="num">9</td>
+<td class="num">3</td>
+<td class="num">6</td>
+<td class="num">33.33</td>
+<td class="num">6</td>
+<td class="num">13</td>
+<td class="num">31.58</td>
+</tr>
+<tr>
+<td class="">2.md</td>
+<td class="">2. MD</td>
+<td class="num">9</td>
+<td class="num">6</td>
+<td class="num">3</td>
+<td class="num">66.67</td>
+<td class="num">11</td>
+<td class="num">7</td>
+<td class="num">61.11</td>
+</tr>
+<tr>
+<td class="">3.hd</td>
+<td class="">3. HD</td>
+<td class="num">9</td>
+<td class="num">3</td>
+<td class="num">6</td>
+<td class="num">33.33</td>
+<td class="num">9</td>
+<td class="num">13</td>
+<td class="num">40.91</td>
+</tr>
+<tr>
+<td class="">3.hs</td>
+<td class="">3. HS</td>
+<td class="num">9</td>
+<td class="num">1</td>
+<td class="num">8</td>
+<td class="num">11.11</td>
+<td class="num">5</td>
+<td class="num">16</td>
+<td class="num">23.81</td>
+</tr>
+<tr>
+<td class="">4.hs</td>
+<td class="">4. HS</td>
+<td class="num">9</td>
+<td class="num">1</td>
+<td class="num">8</td>
+<td class="num">11.11</td>
+<td class="num">4</td>
+<td class="num">16</td>
+<td class="num">20.00</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(13 rows)</div>
+</div>
+<h2>Top Players (for selected team)</h2>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="">player_name</th>
+<th class="num">matches_played</th>
+<th class="num">wins</th>
+<th class="num">win_pct</th>
+<th class="num">sets_won</th>
+<th class="num">sets_lost</th>
+<th class="num">points_won</th>
+<th class="num">points_lost</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="">Anna Buur Thomsen</td>
+<td class="num">18</td>
+<td class="num">12</td>
+<td class="num">66.67</td>
+<td class="num">21</td>
+<td class="num">12</td>
+<td class="num">629</td>
+<td class="num">513</td>
+</tr>
+<tr>
+<td class="">Anders Bisgaard</td>
+<td class="num">16</td>
+<td class="num">7</td>
+<td class="num">43.75</td>
+<td class="num">18</td>
+<td class="num">21</td>
+<td class="num">738</td>
+<td class="num">685</td>
+</tr>
+<tr>
+<td class="">Christian Gregersen</td>
+<td class="num">16</td>
+<td class="num">7</td>
+<td class="num">43.75</td>
+<td class="num">13</td>
+<td class="num">20</td>
+<td class="num">596</td>
+<td class="num">621</td>
+</tr>
+<tr>
+<td class="">Malthe Holm</td>
+<td class="num">14</td>
+<td class="num">9</td>
+<td class="num">64.29</td>
+<td class="num">20</td>
+<td class="num">14</td>
+<td class="num">638</td>
+<td class="num">590</td>
+</tr>
+<tr>
+<td class="">Alberte Uhre Mortensen</td>
+<td class="num">14</td>
+<td class="num">5</td>
+<td class="num">35.71</td>
+<td class="num">12</td>
+<td class="num">18</td>
+<td class="num">548</td>
+<td class="num">528</td>
+</tr>
+<tr>
+<td class="">Mikkel Bisgaard</td>
+<td class="num">14</td>
+<td class="num">2</td>
+<td class="num">14.29</td>
+<td class="num">4</td>
+<td class="num">24</td>
+<td class="num">407</td>
+<td class="num">561</td>
+</tr>
+<tr>
+<td class="">Emil Clemmensen</td>
+<td class="num">14</td>
+<td class="num">1</td>
+<td class="num">7.14</td>
+<td class="num">6</td>
+<td class="num">27</td>
+<td class="num">520</td>
+<td class="num">671</td>
+</tr>
+<tr>
+<td class="">Sabina Tang Drenck</td>
+<td class="num">12</td>
+<td class="num">8</td>
+<td class="num">66.67</td>
+<td class="num">12</td>
+<td class="num">7</td>
+<td class="num">368</td>
+<td class="num">317</td>
+</tr>
+<tr>
+<td class="">Anne Birkeholm Jensen</td>
+<td class="num">10</td>
+<td class="num">8</td>
+<td class="num">80.00</td>
+<td class="num">12</td>
+<td class="num">0</td>
+<td class="num">252</td>
+<td class="num">98</td>
+</tr>
+<tr>
+<td class="">Miriam Højriis</td>
+<td class="num">10</td>
+<td class="num">6</td>
+<td class="num">60.00</td>
+<td class="num">8</td>
+<td class="num">8</td>
+<td class="num">284</td>
+<td class="num">260</td>
+</tr>
+<tr>
+<td class="">Daniel Aurbo</td>
+<td class="num">10</td>
+<td class="num">1</td>
+<td class="num">10.00</td>
+<td class="num">4</td>
+<td class="num">18</td>
+<td class="num">334</td>
+<td class="num">439</td>
+</tr>
+<tr>
+<td class="">Daniel Karlsen</td>
+<td class="num">8</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">3</td>
+<td class="num">16</td>
+<td class="num">286</td>
+<td class="num">383</td>
+</tr>
+<tr>
+<td class="">Malthe Goosmann</td>
+<td class="num">6</td>
+<td class="num">3</td>
+<td class="num">50.00</td>
+<td class="num">6</td>
+<td class="num">6</td>
+<td class="num">210</td>
+<td class="num">214</td>
+</tr>
+<tr>
+<td class="">Henrik Pedersen</td>
+<td class="num">6</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">3</td>
+<td class="num">12</td>
+<td class="num">226</td>
+<td class="num">301</td>
+</tr>
+<tr>
+<td class="">Helena Fraenkel</td>
+<td class="num">4</td>
+<td class="num">2</td>
+<td class="num">50.00</td>
+<td class="num">0</td>
+<td class="num">1</td>
+<td class="num">10</td>
+<td class="num">11</td>
+</tr>
+<tr>
+<td class="">Cecilia Nymark Grønbech</td>
+<td class="num">2</td>
+<td class="num">2</td>
+<td class="num">100.00</td>
+<td class="num">0</td>
+<td class="num">0</td>
+<td class="num">0</td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td class="">Kristoffer Møldrup</td>
+<td class="num">2</td>
+<td class="num">2</td>
+<td class="num">100.00</td>
+<td class="num">4</td>
+<td class="num">0</td>
+<td class="num">84</td>
+<td class="num">57</td>
+</tr>
+<tr>
+<td class="">Camilla Green Hesel</td>
+<td class="num">2</td>
+<td class="num">1</td>
+<td class="num">50.00</td>
+<td class="num">2</td>
+<td class="num">3</td>
+<td class="num">89</td>
+<td class="num">97</td>
+</tr>
+<tr>
+<td class="">Thomas Dalgaard</td>
+<td class="num">2</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+<td class="num">0</td>
+<td class="num">4</td>
+<td class="num">56</td>
+<td class="num">84</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(19 rows)</div>
+</div>
+<h2>Top Doubles Pairs (HD/DD/MD)</h2>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="">pair_name</th>
+<th class="">discipline_code</th>
+<th class="num">matches_together</th>
+<th class="num">wins_together</th>
+<th class="num">win_pct_together</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="">Anders Bisgaard + Malthe Holm</td>
+<td class="">HD</td>
+<td class="num">6</td>
+<td class="num">5</td>
+<td class="num">83.33</td>
+</tr>
+<tr>
+<td class="">Christian Gregersen + Sabina Tang Drenck</td>
+<td class="">MD</td>
+<td class="num">6</td>
+<td class="num">4</td>
+<td class="num">66.67</td>
+</tr>
+<tr>
+<td class="">Alberte Uhre Mortensen + Anders Bisgaard</td>
+<td class="">MD</td>
+<td class="num">6</td>
+<td class="num">1</td>
+<td class="num">16.67</td>
+</tr>
+<tr>
+<td class="">Alberte Uhre Mortensen + Anna Buur Thomsen</td>
+<td class="">DD</td>
+<td class="num">5</td>
+<td class="num">1</td>
+<td class="num">20.00</td>
+</tr>
+<tr>
+<td class="">Anna Buur Thomsen + Anne Birkeholm Jensen</td>
+<td class="">DD</td>
+<td class="num">4</td>
+<td class="num">3</td>
+<td class="num">75.00</td>
+</tr>
+<tr>
+<td class="">Christian Gregersen + Emil Clemmensen</td>
+<td class="">HD</td>
+<td class="num">4</td>
+<td class="num">1</td>
+<td class="num">25.00</td>
+</tr>
+<tr>
+<td class="">Malthe Goosmann + Mikkel Bisgaard</td>
+<td class="">HD</td>
+<td class="num">3</td>
+<td class="num">2</td>
+<td class="num">66.67</td>
+</tr>
+<tr>
+<td class="">Christian Gregersen + Mikkel Bisgaard</td>
+<td class="">HD</td>
+<td class="num">3</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+</tr>
+<tr>
+<td class="">Helena Fraenkel + Sabina Tang Drenck</td>
+<td class="">DD</td>
+<td class="num">2</td>
+<td class="num">1</td>
+<td class="num">50.00</td>
+</tr>
+<tr>
+<td class="">Miriam Højriis + Sabina Tang Drenck</td>
+<td class="">DD</td>
+<td class="num">2</td>
+<td class="num">1</td>
+<td class="num">50.00</td>
+</tr>
+<tr>
+<td class="">Daniel Aurbo + Emil Clemmensen</td>
+<td class="">HD</td>
+<td class="num">2</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+</tr>
+<tr>
+<td class="">Daniel Aurbo + Henrik Pedersen</td>
+<td class="">HD</td>
+<td class="num">2</td>
+<td class="num">0</td>
+<td class="num">0.00</td>
+</tr>
+<tr>
+<td class="">Alberte Uhre Mortensen + Kristoffer Møldrup</td>
+<td class="">MD</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">100.00</td>
+</tr>
+<tr>
+<td class="">Alberte Uhre Mortensen + Miriam Højriis</td>
+<td class="">DD</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">100.00</td>
+</tr>
+<tr>
+<td class="">Alberte Uhre Mortensen + Sabina Tang Drenck</td>
+<td class="">DD</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">100.00</td>
+</tr>
+<tr>
+<td class="">Anders Bisgaard + Anne Birkeholm Jensen</td>
+<td class="">MD</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">100.00</td>
+</tr>
+<tr>
+<td class="">Anna Buur Thomsen + Christian Gregersen</td>
+<td class="">MD</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">100.00</td>
+</tr>
+<tr>
+<td class="">Anne Birkeholm Jensen + Miriam Højriis</td>
+<td class="">DD</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">100.00</td>
+</tr>
+<tr>
+<td class="">Cecilia Nymark Grønbech + Sabina Tang Drenck</td>
+<td class="">DD</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">100.00</td>
+</tr>
+<tr>
+<td class="">Christian Gregersen + Miriam Højriis</td>
+<td class="">MD</td>
+<td class="num">1</td>
+<td class="num">1</td>
+<td class="num">100.00</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(20 rows)</div>
+</div>
+<h2>Recent Team Matches (latest 20)</h2>
+<div class="table-card">
+<table>
+<thead><tr>
+<th class="num">season_id</th>
+<th class="">match_date</th>
+<th class="num">round_no</th>
+<th class="num">match_id</th>
+<th class="">team_side</th>
+<th class="">team_name</th>
+<th class="">opponent_team_name</th>
+<th class="">team_result</th>
+<th class="">discipline_score</th>
+<th class="num">walkovers_in_match</th>
+<th class="">sets_score</th>
+<th class="">points_score</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="num">2025</td>
+<td class="">2026-02-21</td>
+<td class="num">9</td>
+<td class="num">504021</td>
+<td class="">A</td>
+<td class="">Christiansbjerg</td>
+<td class="">Højbjerg 5</td>
+<td class="">W</td>
+<td class="">8-5</td>
+<td class="num">3</td>
+<td class="">11-12</td>
+<td class="">408-379</td>
+</tr>
+<tr>
+<td class="num">2025</td>
+<td class="">2026-01-31</td>
+<td class="num">8</td>
+<td class="num">504015</td>
+<td class="">H</td>
+<td class="">Christiansbjerg</td>
+<td class="">Ikast 3</td>
+<td class="">L</td>
+<td class="">6-7</td>
+<td class="num">5</td>
+<td class="">4-14</td>
+<td class="">261-341</td>
+</tr>
+<tr>
+<td class="num">2025</td>
+<td class="">2026-01-10</td>
+<td class="num">7</td>
+<td class="num">485501</td>
+<td class="">A</td>
+<td class="">Christiansbjerg</td>
+<td class="">Svenstrup</td>
+<td class="">L</td>
+<td class="">4-9</td>
+<td class="num">2</td>
+<td class="">10-15</td>
+<td class="">438-448</td>
+</tr>
+<tr>
+<td class="num">2025</td>
+<td class="">2025-12-06</td>
+<td class="num">6</td>
+<td class="num">485497</td>
+<td class="">A</td>
+<td class="">Christiansbjerg</td>
+<td class="">Silkeborg BK</td>
+<td class="">L</td>
+<td class="">2-11</td>
+<td class="num">0</td>
+<td class="">5-24</td>
+<td class="">437-602</td>
+</tr>
+<tr>
+<td class="num">2025</td>
+<td class="">2025-11-15</td>
+<td class="num">5</td>
+<td class="num">485496</td>
+<td class="">H</td>
+<td class="">Christiansbjerg</td>
+<td class="">Aarhus AB 3</td>
+<td class="">L</td>
+<td class="">4-9</td>
+<td class="num">0</td>
+<td class="">11-18</td>
+<td class="">498-526</td>
+</tr>
+<tr>
+<td class="num">2025</td>
+<td class="">2025-10-25</td>
+<td class="num">4</td>
+<td class="num">485492</td>
+<td class="">H</td>
+<td class="">Christiansbjerg</td>
+<td class="">Lindholm</td>
+<td class="">L</td>
+<td class="">1-12</td>
+<td class="num">2</td>
+<td class="">5-21</td>
+<td class="">452-523</td>
+</tr>
+<tr>
+<td class="num">2025</td>
+<td class="">2025-10-04</td>
+<td class="num">3</td>
+<td class="num">485485</td>
+<td class="">A</td>
+<td class="">Christiansbjerg</td>
+<td class="">Herning</td>
+<td class="">L</td>
+<td class="">6-7</td>
+<td class="num">2</td>
+<td class="">9-17</td>
+<td class="">413-498</td>
+</tr>
+<tr>
+<td class="num">2025</td>
+<td class="">2025-09-20</td>
+<td class="num">2</td>
+<td class="num">485481</td>
+<td class="">A</td>
+<td class="">Christiansbjerg</td>
+<td class="">Aarhus Akademisk</td>
+<td class="">W</td>
+<td class="">9-4</td>
+<td class="num">0</td>
+<td class="">20-9</td>
+<td class="">564-464</td>
+</tr>
+<tr>
+<td class="num">2025</td>
+<td class="">2025-09-06</td>
+<td class="num">1</td>
+<td class="num">485477</td>
+<td class="">H</td>
+<td class="">Christiansbjerg</td>
+<td class="">Langhøj 2</td>
+<td class="">W</td>
+<td class="">8-5</td>
+<td class="num">0</td>
+<td class="">17-10</td>
+<td class="">487-403</td>
+</tr>
+</tbody>
+</table>
+<div class="rowcount">(9 rows)</div>
+</div>
+</main>
+</body>
+</html>
