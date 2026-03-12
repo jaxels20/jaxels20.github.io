@@ -84,13 +84,9 @@ CREATE TEMP TABLE stg_individual_matches (
     wo text
 );
 
-\copy stg_team_matches
-FROM :'team_csv'
-WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
+\copy stg_team_matches FROM :'team_csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
-\copy stg_individual_matches
-FROM :'individual_csv'
-WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
+\copy stg_individual_matches FROM :'individual_csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
 DELETE FROM bridge_team_match_player b
 USING fact_team_match f, dim_season s
