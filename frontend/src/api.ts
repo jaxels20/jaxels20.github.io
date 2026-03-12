@@ -1,6 +1,7 @@
 import type { ReportMode, ReportResponse, SearchResult, SeasonsResponse } from './types'
 
-const API_BASE = '/api'
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim()
+const API_BASE = configuredApiBase ? configuredApiBase.replace(/\/$/, '') : '/api'
 
 export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init)

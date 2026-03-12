@@ -1,0 +1,56 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: badminton-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: badminton-backend
+    restart: unless-stopped
+    environment:
+      BADMINTON_DB_NAME: ${BADMINTON_DB_NAME:-badminton_dw_individual}
+      BADMINTON_DB_HOST: ${BADMINTON_DB_HOST:-db}
+      BADMINTON_DB_PORT: ${BADMINTON_DB_PORT:-5432}
+      BADMINTON_DB_USER: ${BADMINTON_DB_USER:-postgres}
+      BADMINTON_PSQL_BIN: ${BADMINTON_PSQL_BIN:-psql}
+      BADMINTON_CORS_ORIGINS: ${BADMINTON_CORS_ORIGINS:-https://jaxels20.github.io}
+      PGPASSWORD: ${PGPASSWORD:?PGPASSWORD is required}
+      PORT: 8000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2
+    container_name: badminton-caddy
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?API_DOMAIN is required}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

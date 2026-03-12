@@ -31,3 +31,13 @@ So backend should be running before you use the app.
 ```bash
 npm run build
 ```
+
+## Production API URL
+
+For production builds, set `VITE_API_BASE_URL` to your backend API origin (including `/api`).
+
+Example:
+
+```bash
+VITE_API_BASE_URL=https://api.81.27.108.148.sslip.io/api npm run build
+```

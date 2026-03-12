@@ -1,5 +1,7 @@
 # Web App Setup (FastAPI + React)
 
+For production deployment (Droplet backend + GitHub Pages frontend), see `DEPLOYMENT.md`.
+
 This repository now includes:
 
 - Backend API: `backend/app/main.py` (FastAPI)
