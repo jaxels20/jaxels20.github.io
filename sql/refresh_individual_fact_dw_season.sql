@@ -84,11 +84,11 @@ CREATE TEMP TABLE stg_team_matches (
     livescore text
 );
 
-COPY stg_individual_matches
+\copy stg_individual_matches
 FROM :'individual_csv'
 WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
-COPY stg_team_matches
+\copy stg_team_matches
 FROM :'team_csv'
 WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 

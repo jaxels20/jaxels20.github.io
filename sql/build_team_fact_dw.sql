@@ -82,11 +82,11 @@ CREATE TABLE stg_individual_matches (
     wo text
 );
 
-COPY stg_team_matches
+\copy stg_team_matches
 FROM :'team_csv'
 WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
-COPY stg_individual_matches
+\copy stg_individual_matches
 FROM :'individual_csv'
 WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
