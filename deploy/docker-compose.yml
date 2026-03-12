@@ -30,6 +30,8 @@ services:
       BADMINTON_CORS_ORIGINS: ${BADMINTON_CORS_ORIGINS:-https://jaxels20.github.io}
       PGPASSWORD: ${PGPASSWORD:?PGPASSWORD is required}
       PORT: 8000
+    volumes:
+      - ../badminton_export:/app/badminton_export:ro
     depends_on:
       db:
         condition: service_healthy

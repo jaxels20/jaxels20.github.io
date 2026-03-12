@@ -72,6 +72,14 @@ Expected:
 
 ## 4) Bootstrap and refresh data warehouse
 
+The backend container reads CSVs from `badminton_export/` in the repository.
+Make sure those files exist on the Droplet before running refresh:
+
+```bash
+ls badminton_export/season_2025_all_groups_team_matches.csv
+ls badminton_export/season_2025_all_groups_individual_matches.csv
+```
+
 Run season import from `deploy/`:
 
 ```bash
@@ -118,3 +126,8 @@ Recommended:
 - Keep `deploy/.env` private.
 - Back up PostgreSQL volume (`postgres_data`) regularly.
 - Add a cron job for periodic `refresh_season_data.py` runs.
+
+## Troubleshooting
+
+- `database "badminton_dw_individual" does not exist`: run `refresh_season_data.py` once to bootstrap the warehouse database.
+- `Missing season CSV files`: confirm CSVs exist in `badminton_export/`, then rerun `docker compose --env-file .env up -d --build` so backend has the current volume mapping.
