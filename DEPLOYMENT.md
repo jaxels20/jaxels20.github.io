@@ -130,4 +130,5 @@ Recommended:
 ## Troubleshooting
 
 - `database "badminton_dw_individual" does not exist`: run `refresh_season_data.py` once to bootstrap the warehouse database.
-- `Missing season CSV files`: confirm CSVs exist in `badminton_export/`, then rerun `docker compose --env-file .env up -d --build` so backend has the current volume mapping.
+- `Missing season CSV files`: confirm CSVs exist in `badminton_export/`, then rerun `docker compose --env-file .env up -d --build` so containers get the current volume mapping.
+- `COPY ... No such file or directory`: ensure the `db` service can see `/app/badminton_export` (mounted from `../badminton_export` in `deploy/docker-compose.yml`).
