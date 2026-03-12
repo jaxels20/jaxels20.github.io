@@ -33,6 +33,11 @@ REPORT_CONFIGS: dict[str, ReportConfig] = {
         variables=("team_name",),
         title_fallback="Team Stats Report",
     ),
+    "team_h2h": ReportConfig(
+        script_path=SQL_DIR / "team_head_to_head_report.sql",
+        variables=("team_a", "team_b"),
+        title_fallback="Team Head-to-Head Comparison Report",
+    ),
 }
 
 
@@ -40,6 +45,7 @@ def run_report_script(
     *,
     report_type: str,
     name: str,
+    name_b: str | None,
     season_id: int | None,
     settings: Settings,
 ) -> dict[str, Any]:
@@ -61,7 +67,15 @@ def run_report_script(
         command.extend(["-U", settings.db_user])
 
     command.extend(["-d", settings.db_name])
-    command.extend(["--set", f"{report_config.variables[0]}={name}"])
+
+    if report_type == "team_h2h":
+        if not name_b:
+            raise ValueError("team_h2h requires secondary team name")
+        command.extend(["--set", f"team_a={name}"])
+        command.extend(["--set", f"team_b={name_b}"])
+    else:
+        command.extend(["--set", f"{report_config.variables[0]}={name}"])
+
     if season_id is not None:
         command.extend(["--set", f"season_id={season_id}"])
     command.extend(["-f", str(report_config.script_path)])
@@ -88,7 +102,9 @@ def run_report_script(
     return {
         "report_type": report_type,
         "title": title,
-        "subject": name,
+        "subject": f"{name} vs {name_b}" if report_type == "team_h2h" else name,
+        "subject_primary": name,
+        "subject_secondary": name_b,
         "season_id": season_id,
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "raw_text": report_text,

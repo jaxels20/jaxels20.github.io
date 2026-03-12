@@ -75,6 +75,14 @@ python3 collect_all_groups_api.py \
   --url "https://badmintonplayer.dk/DBF/HoldTurnering/Stilling/#1,2025,,1,1,,,,"
 ```
 
+You can also force season directly with `--year`:
+
+```bash
+python3 collect_all_groups_api.py \
+  --url "https://badmintonplayer.dk/DBF/HoldTurnering/Stilling/#1,2025,,1,1,,,," \
+  --year 2022
+```
+
 Recommended for long full-season runs (more robust + clearer progress logs):
 
 ```bash
@@ -121,6 +129,40 @@ psql -d postgres \
   -v team_csv='/absolute/path/season_2025_all_groups_team_matches.csv' \
   -f sql/build_team_fact_dw.sql
 ```
+
+## Incremental Season Refresh (Recommended for future years)
+
+Script: `refresh_season_data.py`
+
+This workflow supports incremental multi-year maintenance:
+
+- collect one selected year
+- delete only that year from both warehouses
+- repopulate that year from fresh exports
+
+Example (refresh year 2022):
+
+```bash
+python3 refresh_season_data.py \
+  --year 2022 \
+  --db-host /tmp \
+  --psql-bin /opt/homebrew/bin/psql-18
+```
+
+Use existing CSVs without re-collecting:
+
+```bash
+python3 refresh_season_data.py \
+  --year 2022 \
+  --skip-collect \
+  --db-host /tmp \
+  --psql-bin /opt/homebrew/bin/psql-18
+```
+
+Under the hood it runs:
+
+- `sql/refresh_individual_fact_dw_season.sql`
+- `sql/refresh_team_fact_dw_season.sql`
 
 ## Player Stats Report
 

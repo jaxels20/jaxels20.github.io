@@ -41,6 +41,7 @@ Open: `http://localhost:5173`
 
 - Search player and show player report
 - Search team and show team report
+- Team head-to-head page (team vs team comparison)
 - Season filter
 - Rendered report sections + tables in web UI
 
@@ -52,3 +53,4 @@ Open: `http://localhost:5173`
 - `GET /api/search/teams?q=<text>&season_id=<year>`
 - `POST /api/reports/player` with `{ "name": "...", "season_id": 2025 }`
 - `POST /api/reports/team` with `{ "name": "...", "season_id": 2025 }`
+- `POST /api/reports/team-h2h` with `{ "team_a": "...", "team_b": "...", "season_id": 2025 }`

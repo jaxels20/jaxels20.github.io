@@ -271,6 +271,12 @@ def parse_args() -> argparse.Namespace:
         help="Standings URL for group catalog (#1,...).",
     )
     parser.add_argument(
+        "--year",
+        type=int,
+        default=None,
+        help="Override season/year in hash payload (example: 2022).",
+    )
+    parser.add_argument(
         "--output-dir",
         default="badminton_export",
         help="Directory for output files (default: badminton_export).",
@@ -358,6 +364,8 @@ def main() -> int:
 
     print("Starting all-groups collection")
     print(f"Source URL: {args.url}")
+    if args.year is not None:
+        print(f"Season override: {args.year}")
     print(
         "Settings: "
         f"timeout={args.timeout}s, retries={args.retries}, "
@@ -371,6 +379,8 @@ def main() -> int:
         return 1
 
     source_payload["subPage"] = 1
+    if args.year is not None:
+        source_payload["seasonID"] = args.year
     source_payload["leagueGroupID"] = None
     source_payload["leagueGroupTeamID"] = None
     source_payload["leagueMatchID"] = None

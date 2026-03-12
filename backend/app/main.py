@@ -16,6 +16,12 @@ class ReportRequest(BaseModel):
     season_id: int | None = None
 
 
+class TeamHeadToHeadReportRequest(BaseModel):
+    team_a: str = Field(min_length=2, max_length=120)
+    team_b: str = Field(min_length=2, max_length=120)
+    season_id: int | None = None
+
+
 class SearchResponse(BaseModel):
     results: list[dict[str, Any]]
 
@@ -79,6 +85,7 @@ def create_app() -> FastAPI:
             return run_report_script(
                 report_type="player",
                 name=payload.name,
+                name_b=None,
                 season_id=payload.season_id,
                 settings=settings,
             )
@@ -94,6 +101,28 @@ def create_app() -> FastAPI:
             return run_report_script(
                 report_type="team",
                 name=payload.name,
+                name_b=None,
+                season_id=payload.season_id,
+                settings=settings,
+            )
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    @app.post("/api/reports/team-h2h")
+    def team_head_to_head_report(
+        payload: TeamHeadToHeadReportRequest,
+        settings: Settings = Depends(get_settings),
+    ) -> dict[str, Any]:
+        if payload.team_a.strip().lower() == payload.team_b.strip().lower():
+            raise HTTPException(
+                status_code=400, detail="Team A and Team B must be different"
+            )
+
+        try:
+            return run_report_script(
+                report_type="team_h2h",
+                name=payload.team_a,
+                name_b=payload.team_b,
                 season_id=payload.season_id,
                 settings=settings,
             )
