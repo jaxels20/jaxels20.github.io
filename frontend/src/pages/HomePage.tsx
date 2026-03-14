@@ -76,12 +76,33 @@ export function HomePage() {
 
       <section className="data-coverage" id="data-foundation" aria-label="Data scope and coverage">
         <div className="data-coverage-head">
-          <p className="eyebrow">Data Scope</p>
-          <h2>Transparent coverage behind every insight.</h2>
+          <p className="eyebrow">Data Foundation</p>
+          <h2>Know exactly what this analysis is based on.</h2>
           <p>
-            This platform focuses on official Danish team competition data with clear boundaries on
-            period and league level.
+            Every chart and metric on this site follows a clear premise, so coaches and players know
+            what is included before drawing conclusions.
           </p>
+        </div>
+        <div className="data-premise-list" aria-label="Data premise summary">
+          <article>
+            <h3>Official Source</h3>
+            <p>
+              Results are sourced from team competitions hosted by <strong>Badminton Danmark</strong>.
+            </p>
+          </article>
+          <article>
+            <h3>League Scope</h3>
+            <p>
+              Coverage includes <strong>Danmarkserien and higher divisions</strong>.
+            </p>
+          </article>
+          <article>
+            <h3>Season Window</h3>
+            <p>
+              Current dataset spans <strong>2020 to 2026</strong>, with future expansion planned from{' '}
+              <strong>2010 and onwards</strong>.
+            </p>
+          </article>
         </div>
         <div className="data-coverage-grid">
           <article>
