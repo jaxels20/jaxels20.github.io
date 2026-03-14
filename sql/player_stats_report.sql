@@ -336,8 +336,21 @@ ORDER BY matches_together DESC, wins_together DESC, partner_name
 LIMIT 10;
 
 \echo ''
+\echo 'Season Point Differential'
+SELECT
+    season_id,
+    COUNT(*) AS matches_played,
+    COALESCE(SUM(points_won), 0) AS points_won,
+    COALESCE(SUM(points_lost), 0) AS points_lost,
+    COALESCE(SUM(points_won), 0) - COALESCE(SUM(points_lost), 0) AS point_delta
+FROM tmp_player_matches
+GROUP BY season_id
+ORDER BY season_id;
+
+\echo ''
 \echo 'Recent Matches (latest 20)'
 SELECT
+    season_id,
     match_date,
     round_no,
     match_id,

@@ -440,6 +440,7 @@ ORDER BY discipline_no, discipline_code;
 WITH player_rows AS (
     SELECT
         dp.player_name,
+        tim.match_id,
         tim.is_win,
         tim.sets_won,
         tim.sets_lost,
@@ -454,7 +455,8 @@ WITH player_rows AS (
 )
 SELECT
     player_name,
-    COUNT(*) AS matches_played,
+    COUNT(DISTINCT match_id) AS team_matches_played,
+    COUNT(*) AS individual_matches_played,
     COUNT(*) FILTER (WHERE is_win) AS wins,
     ROUND(100.0 * COUNT(*) FILTER (WHERE is_win) / NULLIF(COUNT(*), 0), 2) AS win_pct,
     COALESCE(SUM(sets_won), 0) AS sets_won,
@@ -463,7 +465,7 @@ SELECT
     COALESCE(SUM(points_lost), 0) AS points_lost
 FROM player_rows
 GROUP BY player_name
-ORDER BY matches_played DESC, wins DESC, player_name
+ORDER BY team_matches_played DESC, individual_matches_played DESC, wins DESC, player_name
 LIMIT 20;
 
 \echo ''
@@ -502,6 +504,18 @@ FROM pair_rows
 GROUP BY pair_name, discipline_code
 ORDER BY matches_together DESC, wins_together DESC, pair_name, discipline_code
 LIMIT 20;
+
+\echo ''
+\echo 'Season Point Differential'
+SELECT
+    season_id,
+    COUNT(*) AS team_matches,
+    COALESCE(SUM(points_won), 0) AS points_won,
+    COALESCE(SUM(points_lost), 0) AS points_lost,
+    COALESCE(SUM(points_won), 0) - COALESCE(SUM(points_lost), 0) AS point_delta
+FROM tmp_team_match_results
+GROUP BY season_id
+ORDER BY season_id;
 
 \echo ''
 \echo 'Recent Team Matches (latest 20)'

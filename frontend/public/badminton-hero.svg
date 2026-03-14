@@ -1,0 +1,51 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Badminton illustration">
+  <defs>
+    <linearGradient id="bg" x1="110" y1="100" x2="1080" y2="820" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FCFA"/>
+      <stop offset="1" stop-color="#E2F2E9"/>
+    </linearGradient>
+    <linearGradient id="court" x1="120" y1="190" x2="1050" y2="730" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CFE7D8"/>
+      <stop offset="1" stop-color="#B0D2BD"/>
+    </linearGradient>
+    <linearGradient id="racket" x1="240" y1="708" x2="860" y2="228" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0E6B4A"/>
+      <stop offset="1" stop-color="#1A9A6C"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="900" rx="42" fill="url(#bg)"/>
+
+  <ellipse cx="580" cy="792" rx="402" ry="66" fill="#BDDCC8" opacity="0.65"/>
+
+  <path d="M170 256C170 218 201 187 239 187H959C997 187 1028 218 1028 256V656C1028 694 997 725 959 725H239C201 725 170 694 170 656V256Z" fill="url(#court)"/>
+  <path d="M600 187V725" stroke="#EFF9F3" stroke-width="10"/>
+  <path d="M170 456H1028" stroke="#EFF9F3" stroke-width="10"/>
+  <rect x="266" y="281" width="267" height="353" rx="16" stroke="#EAF6EF" stroke-width="8"/>
+  <rect x="667" y="281" width="267" height="353" rx="16" stroke="#EAF6EF" stroke-width="8"/>
+
+  <path d="M318 702C266 647 280 560 334 512L518 341C572 293 658 304 709 360C760 415 749 501 696 550L512 721C458 770 370 757 318 702Z" fill="url(#racket)"/>
+  <ellipse cx="520" cy="451" rx="192" ry="130" transform="rotate(-35 520 451)" fill="#F7FDF9" stroke="#0D5E41" stroke-width="16"/>
+
+  <path d="M399 532L640 366" stroke="#9ECDB2" stroke-width="6"/>
+  <path d="M424 561L664 395" stroke="#9ECDB2" stroke-width="6"/>
+  <path d="M449 590L688 424" stroke="#9ECDB2" stroke-width="6"/>
+  <path d="M474 619L713 453" stroke="#9ECDB2" stroke-width="6"/>
+  <path d="M367 494L555 641" stroke="#9ECDB2" stroke-width="6"/>
+  <path d="M397 471L584 618" stroke="#9ECDB2" stroke-width="6"/>
+  <path d="M427 448L614 596" stroke="#9ECDB2" stroke-width="6"/>
+  <path d="M457 425L644 573" stroke="#9ECDB2" stroke-width="6"/>
+  <path d="M487 401L674 550" stroke="#9ECDB2" stroke-width="6"/>
+
+  <g transform="translate(788 188)">
+    <ellipse cx="0" cy="170" rx="26" ry="84" fill="#FFFFFF" stroke="#9AB6A8" stroke-width="7"/>
+    <path d="M-18 110L0 0L18 110" fill="#FFFFFF" stroke="#9AB6A8" stroke-width="7"/>
+    <path d="M-35 112L0 5L35 112" fill="#FFFFFF" stroke="#9AB6A8" stroke-width="7"/>
+    <path d="M-52 116L0 11L52 116" fill="#FFFFFF" stroke="#9AB6A8" stroke-width="7"/>
+    <circle cx="0" cy="182" r="19" fill="#F2FAF5" stroke="#95B6A6" stroke-width="7"/>
+  </g>
+
+  <circle cx="172" cy="172" r="66" fill="#E6F5EC"/>
+  <circle cx="1046" cy="158" r="44" fill="#D8EFDF"/>
+  <circle cx="1012" cy="742" r="58" fill="#D2EADA"/>
+</svg>

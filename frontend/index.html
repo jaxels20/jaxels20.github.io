@@ -2,9 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <script>
+      ;(function (location) {
+        if (!location.search.startsWith('?/')) {
+          return
+        }
+
+        const decodedPath = location.search
+          .slice(2)
+          .split('&')
+          .map((segment) => segment.replace(/~and~/g, '&'))
+          .join('?')
+
+        const basePath = location.pathname.replace(/\/$/, '')
+        const routePath = decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`
+        const nextUrl = `${basePath}${routePath}${location.hash}`
+        window.history.replaceState(null, '', nextUrl)
+      })(window.location)
+    </script>
+    <title>Badminton Intelligence</title>
   </head>
   <body>
     <div id="root"></div>

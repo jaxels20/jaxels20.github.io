@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecting...</title>
+    <script>
+      ;(function () {
+        const segmentCount = 0
+        const { protocol, hostname, port, pathname, search, hash } = window.location
+        const origin = `${protocol}//${hostname}${port ? `:${port}` : ''}`
+        const pathSegments = pathname.split('/').slice(1)
+        const route = pathSegments.slice(segmentCount).join('/').replace(/&/g, '~and~')
+        const query = search ? `&${search.slice(1).replace(/&/g, '~and~')}` : ''
+        const redirect = `${origin}/?/${route}${query}${hash}`
+        window.location.replace(redirect)
+      })()
+    </script>
+  </head>
+  <body></body>
+</html>

@@ -1,65 +1,126 @@
-import { ArrowRight, BarChart3, Search, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export function HomePage() {
   return (
-    <main className="page">
-      <section className="hero hero-home">
-        <p className="eyebrow">Badminton Intelligence</p>
-        <h1>Professional Team & Player Reporting Platform</h1>
-        <p>
-          Explore deep warehouse-driven match analytics through a modern, searchable experience.
-          Generate complete reports for players and teams in seconds.
-        </p>
+    <>
+      <section className="hero" id="analysis">
+        <div className="hero-copy">
+          <p className="eyebrow">Welcome to Badminton Intelligence</p>
+          <h1>Turn match results into smarter training and better matchday decisions.</h1>
+          <p className="hero-lede">
+            We help players, coaches, and clubs analyze badminton results so you can spot momentum
+            shifts, track progress, and prepare with confidence.
+          </p>
+          <div className="hero-actions">
+            <Link className="button-action" to="/players">
+              Explore player insights
+            </Link>
+            <Link className="text-action" to="/teams">
+              Open team workspace
+            </Link>
+          </div>
+          <ul className="hero-pills" aria-label="Key benefits">
+            <li>Player progression tracking</li>
+            <li>Team trend intelligence</li>
+            <li>Opponent preparation snapshots</li>
+          </ul>
+        </div>
 
-        <div className="hero-cta-row">
-          <Link to="/reports?mode=team" className="cta cta-primary">
-            Open Team Reports
-            <ArrowRight size={16} />
-          </Link>
-          <Link to="/reports?mode=player" className="cta cta-secondary">
-            Open Player Reports
-          </Link>
-          <Link to="/head-to-head" className="cta cta-secondary">
-            Team Head-to-Head
-          </Link>
+        <div className="hero-visual">
+          <div className="hero-image-wrap">
+            <img
+              src="/badminton-hero.svg"
+              alt="Stylized badminton racket and shuttlecock illustration"
+            />
+          </div>
+          <div className="floating-chip chip-one">Smash win rate +12%</div>
+          <div className="floating-chip chip-two">21-17 in deciding sets</div>
         </div>
       </section>
 
-      <section className="feature-grid">
-        <article className="feature-card">
-          <div className="feature-icon">
-            <Search size={18} />
-          </div>
-          <h3>Instant Smart Search</h3>
-          <p>
-            Find players and teams with live suggestions, then generate complete statistical reports
-            filtered by season.
-          </p>
-        </article>
+      <section className="purpose-section">
+        <div className="section-heading">
+          <p className="eyebrow">What this site is for</p>
+          <h2>Clear badminton analysis for every level of competition.</h2>
+        </div>
 
-        <article className="feature-card">
-          <div className="feature-icon">
-            <BarChart3 size={18} />
-          </div>
-          <h3>Structured Report Tables</h3>
-          <p>
-            View robust warehouse outputs including win rates, match-type performance, discipline
-            pivots, and opponent breakdowns.
-          </p>
-        </article>
+        <div className="purpose-grid">
+          <article className="purpose-card">
+            <span className="card-kicker">Players</span>
+            <h3>Understand your game profile</h3>
+            <p>
+              Review season form, score patterns, and opponent matchups to focus each training block
+              on what wins points.
+            </p>
+          </article>
 
-        <article className="feature-card">
-          <div className="feature-icon">
-            <Users size={18} />
-          </div>
-          <h3>Built For Collaboration</h3>
-          <p>
-            Use web reports for analysis sessions, planning meetings, and quick sharing with coaches
-            and teammates.
-          </p>
-        </article>
+          <article className="purpose-card">
+            <span className="card-kicker">Teams</span>
+            <h3>Prepare lineups with confidence</h3>
+            <p>
+              Compare squad trends and key matchups before fixtures so your team strategy starts from
+              evidence.
+            </p>
+          </article>
+
+          <article className="purpose-card" id="foundation">
+            <span className="card-kicker">Data Foundation</span>
+            <h3>Reliable numbers behind every insight</h3>
+            <p>
+              Structured results data powers reports you can trust, from high-level overviews to deep
+              tactical details.
+            </p>
+          </article>
+        </div>
       </section>
-    </main>
+
+      <section className="data-coverage" id="data-foundation" aria-label="Data scope and coverage">
+        <div className="data-coverage-head">
+          <p className="eyebrow">Data Scope</p>
+          <h2>Transparent coverage behind every insight.</h2>
+          <p>
+            This platform focuses on official Danish team competition data with clear boundaries on
+            period and league level.
+          </p>
+        </div>
+        <div className="data-coverage-grid">
+          <article>
+            <h3>Time Period</h3>
+            <p>
+              Data currently includes seasons from <strong>2020 to 2026</strong>. In the future,
+              coverage will be expanded to <strong>2010 and onwards</strong>.
+            </p>
+          </article>
+          <article>
+            <h3>Competition Level</h3>
+            <p>
+              Only team matches hosted by <strong>Badminton Danmark</strong> are included, covering{' '}
+              <strong>Danmarkserien and higher divisions</strong>.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section className="journey">
+        <p className="eyebrow">How it works</p>
+        <div className="journey-grid">
+          <article>
+            <span>01</span>
+            <h3>Collect Results</h3>
+            <p>Import match data from your season to establish a complete competitive baseline.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Analyze Patterns</h3>
+            <p>Surface trends for players and teams, including momentum and consistency shifts.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Act With Confidence</h3>
+            <p>Use insight-driven planning for training focus, lineup choices, and match prep.</p>
+          </article>
+        </div>
+      </section>
+    </>
   )
 }

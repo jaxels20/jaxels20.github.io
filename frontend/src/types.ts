@@ -1,5 +1,3 @@
-export type ReportMode = 'player' | 'team'
-
 export type ReportBlock =
   | { type: 'heading'; text: string }
   | { type: 'paragraph'; text: string }
@@ -14,7 +12,9 @@ export type ReportResponse = {
   blocks: ReportBlock[]
 }
 
-export type SearchResult = { name: string }
+export type SearchResult = {
+  name: string
+}
 
 export type SeasonsResponse = {
   results: { season_id: number; season_label: string }[]
