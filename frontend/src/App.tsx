@@ -10,9 +10,29 @@ function ScrollToHash() {
   const location = useLocation()
 
   useEffect(() => {
+    const path = `${location.pathname}${location.search}${location.hash}`
+    const trackPageView = (): boolean => {
+      const goatcounter = (
+        window as Window & { goatcounter?: { count?: (options?: { path?: string }) => void } }
+      ).goatcounter
+      if (!goatcounter?.count) {
+        return false
+      }
+
+      goatcounter.count({ path })
+      return true
+    }
+
+    const trackedNow = trackPageView()
+    const delayedTrack = trackedNow ? null : window.setTimeout(() => void trackPageView(), 700)
+
     if (!location.hash) {
       window.scrollTo({ top: 0, behavior: 'auto' })
-      return
+      return () => {
+        if (delayedTrack !== null) {
+          window.clearTimeout(delayedTrack)
+        }
+      }
     }
 
     const elementId = location.hash.replace('#', '')
@@ -22,7 +42,13 @@ function ScrollToHash() {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
     })
-  }, [location.hash, location.pathname])
+
+    return () => {
+      if (delayedTrack !== null) {
+        window.clearTimeout(delayedTrack)
+      }
+    }
+  }, [location.hash, location.pathname, location.search])
 
   return null
 }
