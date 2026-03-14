@@ -104,22 +104,6 @@ export function HomePage() {
             </p>
           </article>
         </div>
-        <div className="data-coverage-grid">
-          <article>
-            <h3>Time Period</h3>
-            <p>
-              Data currently includes seasons from <strong>2020 to 2026</strong>. In the future,
-              coverage will be expanded to <strong>2010 and onwards</strong>.
-            </p>
-          </article>
-          <article>
-            <h3>Competition Level</h3>
-            <p>
-              Only team matches hosted by <strong>Badminton Danmark</strong> are included, covering{' '}
-              <strong>Danmarkserien and higher divisions</strong>.
-            </p>
-          </article>
-        </div>
       </section>
 
       <section className="journey">

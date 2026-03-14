@@ -1137,32 +1137,6 @@ a {
   line-height: 1.52;
 }
 
-.data-coverage-grid {
-  margin-top: 1rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.76rem;
-}
-
-.data-coverage-grid article {
-  border: 1px solid rgba(13, 42, 29, 0.1);
-  border-radius: 0.9rem;
-  padding: 0.9rem;
-  background-color: rgba(249, 253, 251, 0.92);
-}
-
-.data-coverage-grid h3 {
-  margin: 0;
-  font-size: 0.98rem;
-}
-
-.data-coverage-grid p {
-  margin: 0.45rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  line-height: 1.55;
-}
-
 .journey {
   border: 1px solid rgba(13, 42, 29, 0.11);
   border-radius: 1.2rem;
@@ -1382,10 +1356,6 @@ a {
   }
 
   .purpose-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .data-coverage-grid {
     grid-template-columns: 1fr;
   }
 
