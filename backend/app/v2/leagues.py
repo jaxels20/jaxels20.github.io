@@ -68,7 +68,15 @@ def list_leagues(settings: Settings, season: int) -> dict[str, Any]:
                 "lastDate": g["last_date"],
             }
         )
-    ordered = sorted(divisions.values(), key=lambda d: (d["tier"], d["name"]))
+    # The source publishes administrative pseudo-divisions (for example "Indberettede
+    # spilletider for runde 8 og 10") that repeat real fixtures under their own match ids
+    # so clubs can report playing times. They are never played, so drop unranked divisions
+    # with no results at all. The rule undoes itself if such a division ever gets a result.
+    ordered = [
+        d
+        for d in sorted(divisions.values(), key=lambda d: (d["tier"], d["name"]))
+        if d["tier"] < 99 or any(g["played"] for g in d["groups"])
+    ]
     for d in ordered:
         d["groups"].sort(key=lambda x: (x["name"].lower().startswith(("kval", "nedryk", "oprykning")), x["name"]))
     return {"seasonId": season, "divisions": ordered}
