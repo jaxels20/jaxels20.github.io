@@ -201,11 +201,11 @@ def player_comparison(settings: Settings, slug_a: str, slug_b: str, season: int 
                    CASE WHEN ba.side_code = 'H' THEN f.away_sets_won ELSE f.home_sets_won END AS b_sets,
                    f.is_walkover, f.set_scores_raw,
                    ht.team_name AS home_team, at.team_name AS away_team,
-                   (SELECT string_agg(p.player_name, ' / ' ORDER BY x.player_slot)
+                   (SELECT json_agg(json_build_object('name', p.player_name, 'id', p.player_id) ORDER BY x.player_slot)
                       FROM bridge_individual_match_player x JOIN dim_player p ON p.player_key = x.player_key
                      WHERE x.individual_match_key = f.individual_match_key AND x.side_code = ba.side_code
                        AND x.player_key NOT IN (%(a)s, %(b)s) AND NOT p.is_placeholder) AS a_partner,
-                   (SELECT string_agg(p.player_name, ' / ' ORDER BY x.player_slot)
+                   (SELECT json_agg(json_build_object('name', p.player_name, 'id', p.player_id) ORDER BY x.player_slot)
                       FROM bridge_individual_match_player x JOIN dim_player p ON p.player_key = x.player_key
                      WHERE x.individual_match_key = f.individual_match_key AND x.side_code = bb.side_code
                        AND x.player_key NOT IN (%(a)s, %(b)s) AND NOT p.is_placeholder) AS b_partner
