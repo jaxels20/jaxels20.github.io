@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { usePlayer } from '../api'
-import { BarList, TrendChart } from '../components/charts'
+import { TrendChart, WinLossBars } from '../components/charts'
 import { SeasonPicker } from '../components/SeasonPicker'
 import {
   Card,
@@ -103,28 +103,29 @@ export function PlayerPage() {
 
           <div className="grid grid-main">
             <div className="stack">
-              <Card title="Discipliner" subtitle="Sejrsprocent pr. disciplin">
-                <BarList
+              <Card title="Vundet og tabt pr. disciplin" subtitle="Stregen markerer 50 %.">
+                <WinLossBars
                   rows={data.byDiscipline.map((d) => ({
                     key: d.code,
                     label: d.code,
                     sub: disciplineName(d.code),
-                    value: d.winPct,
-                    valueLabel: formatPct(d.winPct),
-                    detail: `${d.wins}–${d.losses}`,
+                    wins: d.wins,
+                    losses: d.losses,
+                    winPct: d.winPct,
+                    detail: `sæt ${formatPct(d.setWinPct)} · point ${formatPct(d.pointWinPct)}`,
                   }))}
                 />
                 {data.byMatchType.length > data.byDiscipline.length && (
                   <>
                     <div className="divider" style={{ margin: '0.9rem 0' }} />
                     <h3 style={{ marginBottom: '0.5rem' }}>Pr. plads i opstillingen</h3>
-                    <BarList
+                    <WinLossBars
                       rows={data.byMatchType.map((row) => ({
                         key: row.matchType,
                         label: row.matchType,
-                        value: row.winPct,
-                        valueLabel: formatPct(row.winPct),
-                        detail: `${row.wins}–${row.losses}`,
+                        wins: row.wins,
+                        losses: row.losses,
+                        winPct: row.winPct,
                       }))}
                     />
                   </>

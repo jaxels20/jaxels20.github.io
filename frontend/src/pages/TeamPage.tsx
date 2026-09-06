@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { useTeam } from '../api'
-import { BarList, TrendChart } from '../components/charts'
+import { TrendChart, WinLossBars } from '../components/charts'
 import { SeasonPicker } from '../components/SeasonPicker'
 import {
   Card,
@@ -106,15 +106,16 @@ export function TeamPage() {
 
           <div className="grid grid-main">
             <div className="stack">
-              <Card title="Sejrsprocent pr. kamptype" subtitle="Enkeltkampe fordelt på plads i holdopstillingen">
-                <BarList
+              <Card title="Vundet og tabt pr. kamptype" subtitle="Enkeltkampe fordelt på plads i holdopstillingen. Stregen markerer 50 %.">
+                <WinLossBars
                   rows={data.byMatchType.map((row) => ({
                     key: row.matchType,
                     label: row.matchType,
                     sub: disciplineName(row.code),
-                    value: row.winPct,
-                    valueLabel: formatPct(row.winPct),
-                    detail: `${row.wins}–${row.losses}`,
+                    wins: row.wins,
+                    losses: row.losses,
+                    winPct: row.winPct,
+                    detail: row.setsWon !== undefined ? `sæt ${row.setsWon}–${row.setsLost}` : undefined,
                   }))}
                 />
               </Card>

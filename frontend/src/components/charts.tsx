@@ -40,6 +40,80 @@ export function BarList({ rows, max = 100 }: { rows: BarRow[]; max?: number }) {
   )
 }
 
+export type WinLossRow = {
+  key: string
+  label: ReactNode
+  sub?: ReactNode
+  wins: number
+  losses: number
+  winPct: number | null
+  detail?: string
+}
+
+/** Stacked win/loss bars with a 50 % reference line and direct labels. */
+export function WinLossBars({ rows, midline = 50 }: { rows: WinLossRow[]; midline?: number | null }) {
+  const [hover, setHover] = useState<string | null>(null)
+  if (!rows.length) return <div className="empty">Ingen data.</div>
+  const maxPlayed = Math.max(...rows.map((r) => r.wins + r.losses), 1)
+  return (
+    <div className="wl" role="list">
+      <div className="wl-legend" aria-hidden="true">
+        <span>
+          <i className="wl-win" /> Vundet
+        </span>
+        <span>
+          <i className="wl-loss" /> Tabt
+        </span>
+        {midline !== null && (
+          <span>
+            <i className="wl-mid" /> {midline} %
+          </span>
+        )}
+      </div>
+      {rows.map((row) => {
+        const played = row.wins + row.losses
+        const winShare = played ? (row.wins / played) * 100 : 0
+        const active = hover === row.key
+        return (
+          <div
+            className={`wl-row ${active ? 'active' : ''}`.trim()}
+            role="listitem"
+            key={row.key}
+            onMouseEnter={() => setHover(row.key)}
+            onMouseLeave={() => setHover(null)}
+            aria-label={`${typeof row.label === 'string' ? row.label : ''}: ${row.wins} vundet, ${row.losses} tabt`}
+          >
+            <div className="wl-label">
+              {row.label}
+              {row.sub && <small>{row.sub}</small>}
+            </div>
+            <div className="wl-track" style={{ opacity: 0.55 + 0.45 * (played / maxPlayed) }}>
+              <div className="wl-seg wl-win" style={{ width: `${winShare}%` }}>
+                {winShare >= 14 && <span>{row.wins}</span>}
+              </div>
+              <div className="wl-seg wl-loss" style={{ width: `${100 - winShare}%` }}>
+                {100 - winShare >= 14 && <span>{row.losses}</span>}
+              </div>
+              {midline !== null && <div className="wl-midline" style={{ left: `${midline}%` }} />}
+            </div>
+            <div className="wl-value">
+              {row.winPct === null ? '–' : `${Math.round(row.winPct)} %`}
+              <small>{played} kampe</small>
+            </div>
+            {active && (
+              <div className="wl-tip">
+                <strong>{row.label}</strong>
+                {row.wins}–{row.losses} · {row.winPct === null ? '–' : `${row.winPct.toLocaleString('da-DK')} %`}
+                {row.detail ? ` · ${row.detail}` : ''}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export type PairRow = {
   key: string
   label: ReactNode
