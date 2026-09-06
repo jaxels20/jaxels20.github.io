@@ -35,6 +35,7 @@ def parse_cors_origins(value: str | None) -> tuple[str, ...]:
 class Settings:
     app_name: str
     db_name: str
+    team_db_name: str
     db_host: str
     db_port: int | None
     db_user: str | None
@@ -46,6 +47,7 @@ def get_settings() -> Settings:
     return Settings(
         app_name=os.getenv("BADMINTON_APP_NAME", "Badminton Reports API"),
         db_name=os.getenv("BADMINTON_DB_NAME", "badminton_dw_individual"),
+        team_db_name=os.getenv("BADMINTON_TEAM_DB_NAME", "badminton_dw_team"),
         db_host=os.getenv("BADMINTON_DB_HOST", "/tmp"),
         db_port=parse_optional_int(os.getenv("BADMINTON_DB_PORT")),
         db_user=os.getenv("BADMINTON_DB_USER"),

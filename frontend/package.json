@@ -9,6 +9,7 @@
     "preview": "node ./node_modules/vite/bin/vite.js preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
     "@visx/axis": "^3.12.0",
     "@visx/curve": "^3.12.0",
     "@visx/grid": "^3.12.0",

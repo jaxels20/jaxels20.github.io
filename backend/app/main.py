@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from .db import fetch_seasons, search_players, search_teams
 from .report_service import run_report_script
 from .settings import Settings, get_settings
+from .v2.router import router as v2_router
 
 
 class ReportRequest(BaseModel):
@@ -28,7 +29,7 @@ class SearchResponse(BaseModel):
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version="0.1.0")
+    app = FastAPI(title=settings.app_name, version="0.2.0")
 
     app.add_middleware(
         CORSMiddleware,
@@ -128,6 +129,8 @@ def create_app() -> FastAPI:
             )
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    app.include_router(v2_router)
 
     return app
 

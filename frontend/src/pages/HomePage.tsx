@@ -1,131 +1,147 @@
 import { Link } from 'react-router-dom'
 
+import { useLeaderboards, useLeagues, useSeasons } from '../api'
+import { SearchBox } from '../components/SearchBox'
+import { Card, PlayerLink, Skeleton, TeamLink } from '../components/ui'
+import { formatPct, seasonLabel } from '../lib/format'
+
 export function HomePage() {
+  const { data: seasonsData } = useSeasons()
+  const latest = seasonsData?.seasons[0]?.seasonId ?? null
+  const { data: leagues } = useLeagues(latest)
+  const { data: boards } = useLeaderboards(latest, null, 8)
+
+  const mainDivisions = (leagues?.divisions ?? []).filter((d) => d.tier <= 5)
+
   return (
-    <>
-      <section className="hero" id="analysis">
-        <div className="hero-copy">
-          <p className="eyebrow">Welcome to Badminton Intelligence</p>
-          <h1>Turn match results into smarter training and better matchday decisions.</h1>
-          <p className="hero-lede">
-            We help players, coaches, and clubs analyze badminton results so you can spot momentum
-            shifts, track progress, and prepare with confidence.
-          </p>
-          <div className="hero-actions">
-            <Link className="button-action" to="/players">
-              Explore player insights
-            </Link>
-            <Link className="text-action" to="/teams">
-              Open team workspace
-            </Link>
+    <div className="stack" style={{ gap: '2rem' }}>
+      <section className="home-hero">
+        <div className="eyebrow">Dansk holdbadminton · {latest ? seasonLabel(latest) : ''}</div>
+        <h1>Statistik for hvert hold og hver spiller i holdturneringen</h1>
+        <p>
+          Søg et hold eller en spiller og få sejrsprocenter, form, makkere, modstandere og kamphistorik fra
+          Badmintonligaen til Danmarksserien.
+        </p>
+        <div className="home-search">
+          <SearchBox size="hero" autoFocus placeholder="Søg fx “Vendsyssel” eller “Anders Antonsen”" />
+        </div>
+        <div className="home-quick">
+          <span>Genveje:</span>
+          <Link to={`/ligaer/${latest ?? ''}`}>Stillinger &amp; resultater</Link>
+          <Link to="/toplister">Toplister</Link>
+          <Link to="/hold-mod-hold">Hold mod hold</Link>
+          <Link to="/spiller-mod-spiller">Spiller mod spiller</Link>
+        </div>
+      </section>
+
+      <section>
+        <div className="page-head" style={{ marginBottom: '0.9rem' }}>
+          <div>
+            <div className="eyebrow">Ligaer {latest ? seasonLabel(latest) : ''}</div>
+            <h2 style={{ fontSize: '1.4rem' }}>Stillinger og resultater</h2>
           </div>
-          <ul className="hero-pills" aria-label="Key benefits">
-            <li>Player progression tracking</li>
-            <li>Team trend intelligence</li>
-            <li>Opponent preparation snapshots</li>
-          </ul>
+          <Link className="btn btn-sm" to={`/ligaer/${latest ?? ''}`}>
+            Alle puljer
+          </Link>
         </div>
-
-        <div className="hero-visual">
-          <div className="hero-image-wrap">
-            <img
-              src="/badminton-hero.svg"
-              alt="Stylized badminton racket and shuttlecock illustration"
-            />
+        {!leagues ? (
+          <div className="grid grid-3">
+            <Skeleton height={90} />
+            <Skeleton height={90} />
+            <Skeleton height={90} />
           </div>
-          <div className="floating-chip chip-one">Smash win rate +12%</div>
-          <div className="floating-chip chip-two">21-17 in deciding sets</div>
-        </div>
+        ) : (
+          <div className="stack">
+            {mainDivisions.map((division) => (
+              <div className="division-block" key={division.name}>
+                <h2>{division.name}</h2>
+                <div className="division-grid">
+                  {division.groups.map((group) => (
+                    <Link key={group.groupId} className="league-card" to={`/ligaer/${latest}/${group.groupId}`}>
+                      <strong>{group.name}</strong>
+                      <span>
+                        {group.teams} hold · {group.played}/{group.matches} kampe spillet
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      <section className="purpose-section">
-        <div className="section-heading">
-          <p className="eyebrow">What this site is for</p>
-          <h2>Clear badminton analysis for every level of competition.</h2>
-        </div>
-
-        <div className="purpose-grid">
-          <article className="purpose-card">
-            <span className="card-kicker">Players</span>
-            <h3>Understand your game profile</h3>
-            <p>
-              Review season form, score patterns, and opponent matchups to focus each training block
-              on what wins points.
-            </p>
-          </article>
-
-          <article className="purpose-card">
-            <span className="card-kicker">Teams</span>
-            <h3>Prepare lineups with confidence</h3>
-            <p>
-              Compare squad trends and key matchups before fixtures so your team strategy starts from
-              evidence.
-            </p>
-          </article>
-
-          <article className="purpose-card" id="foundation">
-            <span className="card-kicker">Data Foundation</span>
-            <h3>Reliable numbers behind every insight</h3>
-            <p>
-              Structured results data powers reports you can trust, from high-level overviews to deep
-              tactical details.
-            </p>
-          </article>
-        </div>
+      <section className="grid grid-2">
+        <Card
+          title="Højeste sejrsprocent"
+          subtitle={`${latest ? seasonLabel(latest) : ''} · mindst 8 kampe`}
+          actions={
+            <Link className="btn btn-sm" to="/toplister">
+              Alle toplister
+            </Link>
+          }
+        >
+          {!boards ? (
+            <Skeleton height={220} />
+          ) : (
+            <div className="list">
+              {boards.lists.winPct.slice(0, 6).map((entry, i) => (
+                <div className="list-row" key={entry.player.slug}>
+                  <span className={`rank ${i === 0 ? 'rank-1' : ''}`.trim()}>{i + 1}</span>
+                  <span className="name">
+                    <PlayerLink player={entry.player} />
+                  </span>
+                  <span className="meta">
+                    <TeamLink team={entry.team} className="link" /> · {entry.wins}–{entry.losses}
+                  </span>
+                  <strong className="num">{formatPct(entry.value)}</strong>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+        <Card title="Flest sejre" subtitle={`${latest ? seasonLabel(latest) : ''} · alle divisioner`}>
+          {!boards ? (
+            <Skeleton height={220} />
+          ) : (
+            <div className="list">
+              {boards.lists.mostWins.slice(0, 6).map((entry, i) => (
+                <div className="list-row" key={entry.player.slug}>
+                  <span className={`rank ${i === 0 ? 'rank-1' : ''}`.trim()}>{i + 1}</span>
+                  <span className="name">
+                    <PlayerLink player={entry.player} />
+                  </span>
+                  <span className="meta">
+                    <TeamLink team={entry.team} className="link" /> · {formatPct(entry.winPct)}
+                  </span>
+                  <strong className="num">{entry.wins}</strong>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       </section>
 
-      <section className="data-coverage" id="data-foundation" aria-label="Data scope and coverage">
-        <div className="data-coverage-head">
-          <p className="eyebrow">Data Foundation</p>
-          <h2>Know exactly what this analysis is based on.</h2>
-          <p>
-            Every chart and metric on this site follows a clear premise, so coaches and players know
-            what is included before drawing conclusions.
+      <section className="grid grid-3">
+        <Card title="Datagrundlag">
+          <p className="text-2">
+            Alle kampe fra Badminton Danmarks holdturnering: Badmintonligaen, 1.–3. division og Danmarksserien, sæson
+            2020/21 til i dag. Hver enkelt kamp med sæt og point.
           </p>
-        </div>
-        <div className="data-premise-list" aria-label="Data premise summary">
-          <article>
-            <h3>Official Source</h3>
-            <p>
-              Results are sourced from team competitions hosted by <strong>Badminton Danmark</strong>.
-            </p>
-          </article>
-          <article>
-            <h3>League Scope</h3>
-            <p>
-              Coverage includes <strong>Danmarkserien and higher divisions</strong>.
-            </p>
-          </article>
-          <article>
-            <h3>Season Window</h3>
-            <p>
-              Current dataset spans <strong>2020 to 2026</strong>, with future expansion planned from{' '}
-              <strong>2010 and onwards</strong>.
-            </p>
-          </article>
-        </div>
+        </Card>
+        <Card title="Sådan læses tallene">
+          <p className="text-2">
+            Sejrsprocenter er baseret på spillede kampe. Walkovers tælles med i kampantal, men ikke i sæt- og
+            pointstatistik. Toplister kræver et minimum antal kampe.
+          </p>
+        </Card>
+        <Card title="Del en side">
+          <p className="text-2">
+            Alle hold-, spiller- og puljesider har deres egen adresse og kan deles direkte. Sæsonvalget gemmes i
+            linket.
+          </p>
+        </Card>
       </section>
-
-      <section className="journey">
-        <p className="eyebrow">How it works</p>
-        <div className="journey-grid">
-          <article>
-            <span>01</span>
-            <h3>Collect Results</h3>
-            <p>Import match data from your season to establish a complete competitive baseline.</p>
-          </article>
-          <article>
-            <span>02</span>
-            <h3>Analyze Patterns</h3>
-            <p>Surface trends for players and teams, including momentum and consistency shifts.</p>
-          </article>
-          <article>
-            <span>03</span>
-            <h3>Act With Confidence</h3>
-            <p>Use insight-driven planning for training focus, lineup choices, and match prep.</p>
-          </article>
-        </div>
-      </section>
-    </>
+    </div>
   )
 }

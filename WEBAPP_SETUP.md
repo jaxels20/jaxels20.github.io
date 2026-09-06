@@ -39,20 +39,34 @@ npm run dev
 
 Open: `http://localhost:5173`
 
-## Features
+The backend reads two warehouse databases: `badminton_dw_individual` (individual matches) and
+`badminton_dw_team` (team matches with official points). Both are created by `refresh_season_data.py`.
+Override the second with `BADMINTON_TEAM_DB_NAME`.
 
-- Search player and show player report
-- Search team and show team report
-- Team head-to-head page (team vs team comparison)
-- Season filter
-- Rendered report sections + tables in web UI
+## Pages (Danish UI)
 
-## API endpoints
+- `/` search-first home with league shortcuts and leaderboard teasers
+- `/hold/:slug` team profile, `/spillere/:slug` player profile (`?saeson=2025` or `?saeson=alle`)
+- `/hold-mod-hold?a=&b=` team head-to-head, `/spiller-mod-spiller?a=&b=` player comparison
+- `/ligaer/:season` divisions and groups, `/ligaer/:season/:groupId` standings + rounds
+- `/kampe/:season/:groupId/:matchId` team match detail with every individual match
+- `/toplister` leaderboards (season, division and minimum-matches filters)
+
+Slugs are derived from names: lower-case, `æ/ø/å` -> `ae/oe/aa`, everything else -> `-`.
+
+## API endpoints (v2, JSON)
 
 - `GET /api/health`
-- `GET /api/seasons`
-- `GET /api/search/players?q=<text>&season_id=<year>`
-- `GET /api/search/teams?q=<text>&season_id=<year>`
-- `POST /api/reports/player` with `{ "name": "...", "season_id": 2025 }`
-- `POST /api/reports/team` with `{ "name": "...", "season_id": 2025 }`
-- `POST /api/reports/team-h2h` with `{ "team_a": "...", "team_b": "...", "season_id": 2025 }`
+- `GET /api/v2/seasons`
+- `GET /api/v2/search?q=<text>&season=<year>&limit=8` (teams + players)
+- `GET /api/v2/teams/{slug}?season=<year>`
+- `GET /api/v2/players/{slug}?season=<year>`
+- `GET /api/v2/h2h/teams?a=<slug>&b=<slug>&season=<year>`
+- `GET /api/v2/compare/players?a=<slug>&b=<slug>&season=<year>`
+- `GET /api/v2/leagues?season=<year>`
+- `GET /api/v2/groups/{league_group_id}?season=<year>`
+- `GET /api/v2/matches/{match_id}?season=<year>&group=<league_group_id>`
+- `GET /api/v2/leaderboards?season=<year>&division=<name>&min_matches=8`
+
+Responses are cached in-process for 10 minutes; `POST /api/v2/cache/clear` empties the cache after a data reload.
+The legacy psql-report endpoints under `/api/reports/*` still exist but are no longer used by the frontend.

@@ -24,6 +24,7 @@ services:
     restart: unless-stopped
     environment:
       BADMINTON_DB_NAME: ${BADMINTON_DB_NAME:-badminton_dw_individual}
+      BADMINTON_TEAM_DB_NAME: ${BADMINTON_TEAM_DB_NAME:-badminton_dw_team}
       BADMINTON_DB_HOST: ${BADMINTON_DB_HOST:-db}
       BADMINTON_DB_PORT: ${BADMINTON_DB_PORT:-5432}
       BADMINTON_DB_USER: ${BADMINTON_DB_USER:-postgres}
