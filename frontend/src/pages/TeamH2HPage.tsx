@@ -7,6 +7,7 @@ import { SeasonPicker } from '../components/SeasonPicker'
 import { Card, EmptyState, ErrorState, FormPills, PageSkeleton, TeamLink } from '../components/ui'
 import { useSeasonParam } from '../hooks/useSeasonParam'
 import { disciplineName, formatDate, formatPct, record, seasonLabel } from '../lib/format'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 function CompareRow({
   label,
@@ -36,6 +37,7 @@ export function TeamH2HPage() {
   const b = params.get('b')
   const { season, setSeason } = useSeasonParam('all')
   const { data, error, isLoading } = useTeamHeadToHead(a, b, season)
+  usePageTitle(data ? `${data.a.team.name} mod ${data.b.team.name}` : a || b ? null : 'Hold mod hold')
 
   const setSide = (key: 'a' | 'b', slug: string | null) => {
     setParams((prev) => {

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { useSeasons } from '../api'
+import { pathHasTitle } from '../hooks/usePageTitle'
 import { formatDate, formatDateTime } from '../lib/format'
 import { SearchBox } from './SearchBox'
 
@@ -9,15 +10,27 @@ function usePageTracking() {
   const location = useLocation()
   useEffect(() => {
     const path = `${location.pathname}${location.search}`
-    const track = (): boolean => {
-      const goatcounter = (window as Window & { goatcounter?: { count?: (o?: { path?: string }) => void } }).goatcounter
-      if (!goatcounter?.count) return false
-      goatcounter.count({ path })
-      return true
+    let cancelled = false
+    const started = Date.now()
+
+    const tryCount = () => {
+      if (cancelled) return
+      const goatcounter = (window as Window & { goatcounter?: { count?: (o?: { path?: string; title?: string }) => void } })
+        .goatcounter
+      const ready = Boolean(goatcounter?.count) && pathHasTitle(path)
+      // Give the page up to 2 s to load its name (team, player, pulje) so the
+      // dashboard shows a readable title; then record the view regardless.
+      if (!ready && Date.now() - started < 2000) {
+        window.setTimeout(tryCount, 150)
+        return
+      }
+      goatcounter?.count?.({ path, title: document.title })
     }
-    if (track()) return
-    const timer = window.setTimeout(() => void track(), 700)
-    return () => window.clearTimeout(timer)
+
+    tryCount()
+    return () => {
+      cancelled = true
+    }
   }, [location.pathname, location.search])
 }
 

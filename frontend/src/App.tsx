@@ -1,6 +1,7 @@
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppShell } from './components/AppShell'
+import { usePageTitle } from './hooks/usePageTitle'
 import { GroupPage } from './pages/GroupPage'
 import { HomePage } from './pages/HomePage'
 import { LeaderboardsPage } from './pages/LeaderboardsPage'
@@ -12,6 +13,7 @@ import { TeamH2HPage } from './pages/TeamH2HPage'
 import { TeamPage } from './pages/TeamPage'
 
 function NotFoundPage() {
+  usePageTitle('Siden findes ikke')
   return (
     <div className="empty" style={{ padding: '4rem 1rem' }}>
       <h1 style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>Siden findes ikke</h1>

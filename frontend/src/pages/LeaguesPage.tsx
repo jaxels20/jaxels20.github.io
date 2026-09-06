@@ -4,6 +4,7 @@ import { useLeagues, useSeasons } from '../api'
 import { SeasonPicker } from '../components/SeasonPicker'
 import { ErrorState, Skeleton } from '../components/ui'
 import { formatShortDate, seasonLabel } from '../lib/format'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export function LeaguesPage() {
   const params = useParams()
@@ -12,6 +13,7 @@ export function LeaguesPage() {
   const latest = seasonsData?.seasons[0]?.seasonId ?? null
   const season = params.season ? Number(params.season) : null
   const { data, error, isLoading } = useLeagues(season)
+  usePageTitle(season ? `Ligaer ${seasonLabel(season)}` : null)
 
   if (season === null) {
     if (latest === null) return <Skeleton height={200} />

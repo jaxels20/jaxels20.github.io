@@ -4,12 +4,14 @@ import { useLeaderboards, useLeagues, useSeasons } from '../api'
 import { SearchBox } from '../components/SearchBox'
 import { Card, PlayerLink, Skeleton, TeamLink } from '../components/ui'
 import { formatPct, seasonLabel } from '../lib/format'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export function HomePage() {
   const { data: seasonsData } = useSeasons()
   const latest = seasonsData?.seasons[0]?.seasonId ?? null
   const { data: leagues } = useLeagues(latest)
   const { data: boards } = useLeaderboards(latest, null, null)
+  usePageTitle('Statistik for dansk holdbadminton')
 
   const mainDivisions = (leagues?.divisions ?? []).filter((d) => d.tier <= 5)
 

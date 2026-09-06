@@ -18,11 +18,13 @@ import {
 } from '../components/ui'
 import { useSeasonParam } from '../hooks/useSeasonParam'
 import { disciplineName, formatDate, formatPct, formatSigned, seasonLabel } from '../lib/format'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export function PlayerPage() {
   const { slug } = useParams()
   const { season, setSeason, resolved, explicit } = useSeasonParam('latest')
   const { data, error, isLoading } = usePlayer(resolved ? slug : undefined, season)
+  usePageTitle(data ? `${data.player.name} · Spiller` : null)
 
   useEffect(() => {
     if (!data || explicit || season === null) return

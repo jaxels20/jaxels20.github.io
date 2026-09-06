@@ -3,12 +3,14 @@ import { Link, useParams } from 'react-router-dom'
 import { useGroup } from '../api'
 import { Card, ErrorState, PageSkeleton, TeamLink } from '../components/ui'
 import { formatDate, formatSigned, formatWeekday, seasonLabel } from '../lib/format'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export function GroupPage() {
   const params = useParams()
   const season = params.season ? Number(params.season) : null
   const groupId = params.groupId ? Number(params.groupId) : null
   const { data, error, isLoading } = useGroup(season, groupId)
+  usePageTitle(data ? `${data.division} ${data.name} ${seasonLabel(data.seasonId)}` : null)
 
   if (error) return <ErrorState error={error} />
   if (isLoading || !data) return <PageSkeleton />

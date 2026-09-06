@@ -4,6 +4,7 @@ import { useMatch } from '../api'
 import { Card, ErrorState, PageSkeleton, PlayerLink, TeamLink } from '../components/ui'
 import { disciplineName, formatDate, seasonLabel } from '../lib/format'
 import type { MatchPlayer } from '../types'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 function Players({ players, won, align }: { players: MatchPlayer[]; won: boolean; align: 'left' | 'right' }) {
   return (
@@ -24,6 +25,7 @@ export function MatchPage() {
   const groupId = params.groupId ? Number(params.groupId) : null
   const matchId = params.matchId ? Number(params.matchId) : null
   const { data, error, isLoading } = useMatch(season, groupId, matchId)
+  usePageTitle(data ? `${data.home.name} – ${data.away.name}` : null)
 
   if (error) return <ErrorState error={error} />
   if (isLoading || !data) return <PageSkeleton />

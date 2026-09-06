@@ -18,11 +18,13 @@ import {
 } from '../components/ui'
 import { useSeasonParam } from '../hooks/useSeasonParam'
 import { disciplineName, formatDate, formatNumber, formatPct, formatSigned, record, seasonLabel } from '../lib/format'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export function TeamPage() {
   const { slug } = useParams()
   const { season, setSeason, resolved, explicit } = useSeasonParam('latest')
   const { data, error, isLoading } = useTeam(resolved ? slug : undefined, season)
+  usePageTitle(data ? `${data.team.name} · Hold` : null)
 
   // Without an explicit season in the URL, fall back to the latest season the team actually played.
   useEffect(() => {

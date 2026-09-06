@@ -6,6 +6,7 @@ import { Card, ErrorState, PlayerLink, Skeleton, TeamLink } from '../components/
 import { useSeasonParam } from '../hooks/useSeasonParam'
 import { formatPct, seasonLabel } from '../lib/format'
 import type { LeaderboardEntry, LeaderboardPair } from '../types'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 const MIN_OPTIONS = [2, 5, 8, 12, 20]
 
@@ -56,6 +57,7 @@ export function LeaderboardsPage() {
   const minParam = params.get('min')
   const minMatches = minParam ? Number(minParam) || null : null
   const { data, error, isLoading, isFetching } = useLeaderboards(resolved ? season : null, division, minMatches)
+  usePageTitle(season ? `Toplister ${seasonLabel(season)}` : null)
 
   const update = (key: string, value: string | null) => {
     setParams((prev) => {

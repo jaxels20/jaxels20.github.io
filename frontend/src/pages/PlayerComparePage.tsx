@@ -8,6 +8,7 @@ import { Card, EmptyState, ErrorState, FormPills, PageSkeleton, PlayerLink, Team
 import { useSeasonParam } from '../hooks/useSeasonParam'
 import { disciplineName, formatDate, formatPct, formatSigned, seasonLabel } from '../lib/format'
 import type { PlayerMeeting } from '../types'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 function CompareRow({ label, a, b, aText, bText }: { label: string; a: number | null; b: number | null; aText: string; bText: string }) {
   const aWins = a !== null && b !== null && a > b
@@ -85,6 +86,7 @@ export function PlayerComparePage() {
   const b = params.get('b')
   const { season, setSeason } = useSeasonParam('all')
   const { data, error, isLoading } = usePlayerComparison(a, b, season)
+  usePageTitle(data ? `${data.a.player.name} mod ${data.b.player.name}` : a || b ? null : 'Spiller mod spiller')
 
   const setSide = (key: 'a' | 'b', slug: string | null) => {
     setParams((prev) => {
