@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import { useLineupPoints, useLineupSetup } from '../api'
+import { optimiseLineup, useLineupPoints, useLineupSetup, useResolveEntity } from '../api'
 import { SearchBox } from '../components/SearchBox'
 import { Card, EmptyState, ErrorState, PageSkeleton, PlayerLink, TeamLink } from '../components/ui'
 import { usePageTitle } from '../hooks/usePageTitle'
-import { formatDate, formatNumber, seasonLabel } from '../lib/format'
+import { formatDate, formatNumber, formatPct, seasonLabel } from '../lib/format'
 import {
   CATEGORY_NAMES,
   checkLineup,
@@ -23,7 +23,7 @@ import {
   type Sex,
   type SlotSpec,
 } from '../lib/lineupRules'
-import type { LineupSetupPlayer } from '../types'
+import type { LineupSetupPlayer, OptimiseResult } from '../types'
 
 const SLOT_CATEGORIES: Record<string, PointsKey[]> = { MD: ['mix'], DS: ['single'], HS: ['single'], DD: ['double'], HD: ['double'] }
 
@@ -152,6 +152,47 @@ export function LineupPage() {
     [format, slots, assignment, higher],
   )
   const status = verdict(issues)
+
+  // Optimiser: opponent in the URL (mod=...), result in state.
+  const opponentSlug = params.get('mod')
+  const opponentName = useResolveEntity('team', opponentSlug, Boolean(opponentSlug))
+  const [optimised, setOptimised] = useState<OptimiseResult | null>(null)
+  const [optimising, setOptimising] = useState(false)
+  const [optimiseError, setOptimiseError] = useState<string | null>(null)
+  const [chosenCandidate, setChosenCandidate] = useState(0)
+
+  const runOptimiser = async () => {
+    if (!setup || !format || !opponentSlug) return
+    setOptimising(true)
+    setOptimiseError(null)
+    try {
+      const sex: Record<string, 'M' | 'F'> = {}
+      for (const [id, value] of Object.entries(sexOverride)) sex[id] = value
+      const result = await optimiseLineup({
+        team: setup.team.slug,
+        opponent: opponentSlug,
+        available: [...available],
+        matches: format.matches,
+        sex,
+      })
+      setOptimised(result)
+      setChosenCandidate(0)
+    } catch (err) {
+      setOptimiseError(err instanceof Error ? err.message : 'Beregningen fejlede.')
+    } finally {
+      setOptimising(false)
+    }
+  }
+
+  const applyCandidate = (slotsToApply: Record<string, number[]>) => {
+    setParams((prev) => {
+      const copy = new URLSearchParams(prev)
+      for (const slot of slotsFor(13)) copy.delete(slot.key.toLowerCase())
+      for (const [key, ids] of Object.entries(slotsToApply)) copy.set(key.toLowerCase(), ids.join(','))
+      return copy
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const setSlot = (slot: SlotSpec, position: number, id: number | null) => {
     setParams((prev) => {
@@ -340,6 +381,141 @@ export function LineupPage() {
                       </li>
                     ))}
                   </ul>
+                )}
+              </Card>
+
+              <Card
+                title="Bedste opstilling mod en modstander"
+                subtitle="Finder den lovlige opstilling med flest forventede vundne kampe mod modstanderens seneste opstilling. Bruger de spillere, der er markeret til rådighed."
+              >
+                <div className="optimise-controls">
+                  <div style={{ flex: 1, minWidth: 220 }}>
+                    <div className="eyebrow" style={{ marginBottom: '0.4rem' }}>
+                      Modstander
+                    </div>
+                    {opponentSlug ? (
+                      <div className="picker-chosen">
+                        <span className="picker-name">{optimised?.opponent.name ?? opponentName.data?.name ?? opponentSlug}</span>
+                        <button
+                          type="button"
+                          className="picker-change"
+                          onClick={() => {
+                            setParam('mod', null)
+                            setOptimised(null)
+                          }}
+                        >
+                          Skift
+                        </button>
+                      </div>
+                    ) : (
+                      <SearchBox mode="pick" restrict="team" placeholder="Vælg modstanderhold" onPick={(o) => setParam('mod', o.entity.slug)} />
+                    )}
+                  </div>
+                  <button type="button" className="btn btn-primary" disabled={!opponentSlug || optimising || points.isLoading} onClick={runOptimiser}>
+                    {optimising ? 'Beregner…' : 'Beregn bedste opstilling'}
+                  </button>
+                </div>
+
+                {optimiseError && (
+                  <div className="error" role="alert" style={{ marginTop: '0.8rem' }}>
+                    {optimiseError}
+                  </div>
+                )}
+
+                {optimised && (
+                  <div className="stack" style={{ marginTop: '1rem' }}>
+                    {optimised.opponentLineup ? (
+                      <p className="note">
+                        Modstanderen antages at stille som i seneste kamp, {formatDate(optimised.opponentLineup.date)} mod{' '}
+                        <TeamLink team={optimised.opponentLineup.against} />. {optimised.model}
+                      </p>
+                    ) : (
+                      <p className="note">{optimised.model}</p>
+                    )}
+                    {optimised.notes.map((n) => (
+                      <p className="note" key={n}>
+                        {n}
+                      </p>
+                    ))}
+                    {optimised.excluded.length > 0 && (
+                      <p className="note">
+                        Udeladt: {optimised.excluded.map((e) => `${e.player.name} (${e.reason})`).join(' · ')}
+                      </p>
+                    )}
+
+                    <div className="tabs" role="tablist" aria-label="Forslag">
+                      {optimised.candidates.map((c, i) => (
+                        <button key={i} type="button" role="tab" aria-selected={chosenCandidate === i} className={chosenCandidate === i ? 'active' : ''} onClick={() => setChosenCandidate(i)}>
+                          Forslag {i + 1} · {c.expectedWins.toLocaleString('da-DK', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} sejre
+                        </button>
+                      ))}
+                    </div>
+
+                    {optimised.candidates[chosenCandidate] && (
+                      <>
+                        <div className="optimise-summary">
+                          <div className="stat">
+                            <div className="stat-label">Forventede sejre</div>
+                            <div className="stat-value num accent">
+                              {optimised.candidates[chosenCandidate].expectedWins.toLocaleString('da-DK', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                              <span className="muted" style={{ fontSize: '1rem' }}> af {optimised.format.matches}</span>
+                            </div>
+                          </div>
+                          <button type="button" className="btn" onClick={() => applyCandidate(optimised.candidates[chosenCandidate].slots)}>
+                            Brug denne opstilling
+                          </button>
+                        </div>
+                        <div className="table-wrap">
+                          <table className="table table-compact">
+                            <thead>
+                              <tr>
+                                <th>Kamp</th>
+                                <th>{optimised.team.name}</th>
+                                <th className="c">Sejrschance</th>
+                                <th>{optimised.opponent.name}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {optimised.candidates[chosenCandidate].details.map((row) => (
+                                <tr key={row.slot}>
+                                  <td className="primary">{row.slot}</td>
+                                  <td className="primary">
+                                    {row.ours.map((o, i) => (
+                                      <span key={o.slug}>
+                                        {i > 0 && ' / '}
+                                        <PlayerLink player={o} />
+                                        <span className="dim" style={{ fontWeight: 400 }}> {o.rating}{o.matches < 5 ? '?' : ''}</span>
+                                      </span>
+                                    ))}
+                                  </td>
+                                  <td className="c">
+                                    <span className={`pwin ${row.pWin >= 0.6 ? 'good' : row.pWin <= 0.4 ? 'bad' : ''}`.trim()}>{formatPct(row.pWin * 100)}</span>
+                                  </td>
+                                  <td>
+                                    {row.theirs.length ? (
+                                      row.theirs.map((t, i) => (
+                                        <span key={t.slug}>
+                                          {i > 0 && ' / '}
+                                          <PlayerLink player={t} />
+                                          <span className="dim"> {t.rating}{t.matches < 5 ? '?' : ''}</span>
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="dim">ukendt · {row.theirRating}</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <p className="note">
+                          Tallet efter navnet er styrken i den disciplin; ? betyder under 5 ligakampe i data. Sejrschancen er
+                          beregnet ud fra styrkeforskellen, og modstanderens opstilling er et gæt.
+                        </p>
+                      </>
+                    )}
+                  </div>
                 )}
               </Card>
             </div>

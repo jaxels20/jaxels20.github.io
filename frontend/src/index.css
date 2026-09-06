@@ -1282,6 +1282,34 @@ p {
   }
 }
 
+.optimise-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.optimise-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pwin {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pwin.good {
+  color: var(--good);
+}
+
+.pwin.bad {
+  color: var(--bad);
+}
+
 /* ---------- versus picker ---------- */
 
 .versus-picker {

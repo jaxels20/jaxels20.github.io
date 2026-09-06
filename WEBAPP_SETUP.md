@@ -77,6 +77,10 @@ player with that name.
 - `GET /api/v2/leaderboards?season=<year>&division=<name>&min_matches=<n>` (omit `min_matches` to scale it to the season's progress)
 - `GET /api/v2/lineup/setup?team=<slug>` (roster with inferred sex, team format, club's higher team and its latest lineup)
 - `POST /api/v2/lineup/points` with `{"ids": [...]}` (current ranking points for up to 60 players, cached a day each)
+- `POST /api/v2/lineup/optimise` with `{"team", "opponent", "available": [ids], "matches": 9|13, "sex": {id: "M"|"F"}}`:
+  the legal lineup with the highest expected number of won matches against the opponent's latest
+  lineup. Strength is an Elo-style rating per player and discipline computed from every league match
+  in the warehouse (cached 6 h); returns the top three lineups with per-match win probabilities
 
 Responses are cached in-process for 10 minutes; `POST /api/v2/cache/clear` empties the cache after a data reload.
 The legacy psql-report endpoints under `/api/reports/*` still exist but are no longer used by the frontend.

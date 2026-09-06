@@ -552,3 +552,32 @@ export type LineupPoints = {
     { id: number; club: string | null; ageGroup: string | null; youth: boolean; single: number | null; double: number | null; mix: number | null; seasonId: number }
   >
 }
+
+export type OptimisePlayer = Entity & { rating: number; matches: number; youth?: boolean }
+
+export type OptimiseDetail = {
+  slot: string
+  ours: OptimisePlayer[]
+  ourRating: number
+  ourPoints: number
+  theirs: OptimisePlayer[]
+  theirRating: number
+  pWin: number
+}
+
+export type OptimiseCandidate = {
+  expectedWins: number
+  slots: Record<string, number[]>
+  details: OptimiseDetail[]
+}
+
+export type OptimiseResult = {
+  team: Entity
+  opponent: Entity
+  format: LineupFormat
+  opponentLineup: { date: string; against: Entity; players: (Entity & { sex: 'M' | 'F' | null; slots: string[] })[] } | null
+  candidates: OptimiseCandidate[]
+  excluded: { player: Entity; reason: string }[]
+  notes: string[]
+  model: string
+}

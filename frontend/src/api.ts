@@ -6,6 +6,7 @@ import type {
   Leaderboards,
   LineupPoints,
   LineupSetup,
+  OptimiseResult,
   LeaguesResponse,
   MatchDetail,
   PlayerComparison,
@@ -157,6 +158,31 @@ export function useLineupPoints(ids: number[]) {
     staleTime: 60 * 60 * 1000,
     retry: 1,
   })
+}
+
+export async function optimiseLineup(body: {
+  team: string
+  opponent: string
+  available: number[]
+  matches: number
+  sex: Record<string, 'M' | 'F'>
+}): Promise<OptimiseResult> {
+  const response = await fetch(`${API_BASE}/lineup/optimise`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) {
+    let detail = `Beregningen fejlede (${response.status})`
+    try {
+      const data = (await response.json()) as { detail?: string }
+      if (data.detail) detail = data.detail
+    } catch {
+      // keep generic
+    }
+    throw new ApiError(response.status, detail)
+  }
+  return (await response.json()) as OptimiseResult
 }
 
 export function useLeagues(season: number | null) {

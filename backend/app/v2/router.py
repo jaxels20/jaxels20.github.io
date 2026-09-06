@@ -9,6 +9,7 @@ from .common import NotFound, cached, clear_cache, individual_cursor, player_ent
 from .compare import player_comparison, team_head_to_head
 from .leaderboards import leaderboards
 from .lineup import lineup_points, lineup_setup
+from .optimiser import optimise
 from .leagues import group_detail, list_leagues, list_seasons, match_detail
 from .players import player_profile, resolve_player
 from .ranking import SourceUnavailable, player_ranking
@@ -151,6 +152,26 @@ def lineup_points_endpoint(ids: list[int] = Body(embed=True, max_length=60)) -> 
         return lineup_points(ids)
     except SourceUnavailable as exc:
         raise HTTPException(status_code=503, detail="Kunne ikke hente point fra badmintonplayer.dk") from exc
+
+
+@router.post("/lineup/optimise")
+def lineup_optimise_endpoint(
+    team: str = Body(min_length=1),
+    opponent: str = Body(min_length=1),
+    available: list[int] = Body(max_length=60),
+    matches: int = Body(default=0),
+    sex: dict[str, str] = Body(default_factory=dict),
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
+    """Legal lineup with the highest expected number of won matches against an opponent."""
+    overrides = {int(k): v for k, v in sex.items() if v in ("M", "F")}
+    key = f"optimise:{team}:{opponent}:{matches}:{sorted(set(available))}:{sorted(overrides.items())}"
+    try:
+        return _run(key, lambda: optimise(settings, team, opponent, available, matches, overrides), ttl=1800)
+    except HTTPException as exc:
+        if isinstance(exc.__cause__, SourceUnavailable):
+            raise HTTPException(status_code=503, detail="Kunne ikke hente point fra badmintonplayer.dk") from exc
+        raise
 
 
 @router.post("/cache/clear", include_in_schema=False)
