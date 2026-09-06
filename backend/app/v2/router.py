@@ -10,15 +10,16 @@ from .compare import player_comparison, team_head_to_head
 from .leaderboards import leaderboards
 from .leagues import group_detail, list_leagues, list_seasons, match_detail
 from .players import player_profile, resolve_player
+from .ranking import SourceUnavailable, player_ranking
 from .search import search
 from .teams import resolve_team, team_profile
 
 router = APIRouter(prefix="/api/v2", tags=["v2"])
 
 
-def _run(key: str, build) -> Any:
+def _run(key: str, build, ttl: float | None = None) -> Any:
     try:
-        return cached(key, build)
+        return cached(key, build) if ttl is None else cached(key, build, ttl)
     except NotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
@@ -68,6 +69,19 @@ def team(slug: str, season: int | None = None, settings: Settings = Depends(get_
 @router.get("/players/{slug}")
 def player(slug: str, season: int | None = None, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
     return _run(f"player:{slug}:{season}", lambda: player_profile(settings, slug, season))
+
+
+@router.get("/players/{slug}/ranking")
+def player_ranking_endpoint(slug: str, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
+    """Ranking points and level from badmintonplayer.dk. Held for a day because it is
+    fetched from another site; the player page loads it separately so a failure here
+    never blocks the rest of the profile."""
+    try:
+        return _run(f"ranking:{slug}", lambda: player_ranking(settings, slug), ttl=86400)
+    except HTTPException as exc:
+        if isinstance(exc.__cause__, SourceUnavailable):
+            raise HTTPException(status_code=503, detail="Kunne ikke hente point fra badmintonplayer.dk") from exc
+        raise
 
 
 @router.get("/h2h/teams")

@@ -155,7 +155,7 @@ _CACHE_LOCK = threading.Lock()
 CACHE_TTL_SECONDS = 600
 
 
-def cached(key: str, build: Callable[[], Any]) -> Any:
+def cached(key: str, build: Callable[[], Any], ttl: float = CACHE_TTL_SECONDS) -> Any:
     now = time.monotonic()
     with _CACHE_LOCK:
         hit = _CACHE.get(key)
@@ -163,7 +163,7 @@ def cached(key: str, build: Callable[[], Any]) -> Any:
             return hit[1]
     value = build()
     with _CACHE_LOCK:
-        _CACHE[key] = (now + CACHE_TTL_SECONDS, value)
+        _CACHE[key] = (now + ttl, value)
         if len(_CACHE) > 2000:
             expired = [k for k, (exp, _) in _CACHE.items() if exp <= now]
             for k in expired:

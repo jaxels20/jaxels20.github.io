@@ -65,6 +65,9 @@ player with that name.
 - `GET /api/v2/resolve?kind=team|player&slug=<slug>` (slug to display name)
 - `GET /api/v2/teams/{slug}?season=<year>`
 - `GET /api/v2/players/{slug}?season=<year>`
+- `GET /api/v2/players/{slug}/ranking` (ranking points and level, fetched live from
+  badmintonplayer.dk and cached for a day; only club, level and points are kept, never
+  the BadmintonID or linked user accounts)
 - `GET /api/v2/h2h/teams?a=<slug>&b=<slug>&season=<year>`
 - `GET /api/v2/compare/players?a=<slug>&b=<slug>&season=<year>`
 - `GET /api/v2/leagues?season=<year>`

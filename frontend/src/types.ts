@@ -1,4 +1,4 @@
-export type Entity = { name: string; slug: string }
+export type Entity = { name: string; slug: string; /** badmintonplayer.dk id, players only */ id?: number | null }
 export type Result = 'W' | 'L' | 'D'
 
 export type Season = { seasonId: number; label: string }
@@ -489,4 +489,21 @@ export type Leaderboards = {
     pointMargin: LeaderboardEntry[]
     pairs: LeaderboardPair[]
   }
+}
+
+export type RankingList = {
+  list: string
+  group: string | null
+  points: number
+  matches: number | null
+  place: number | null
+}
+
+export type PlayerRanking = {
+  player: { name: string; id: number }
+  profileUrl: string
+  club: string | null
+  currentSeasonId: number | null
+  lists: RankingList[]
+  levels: { seasonId: number; level: number }[]
 }

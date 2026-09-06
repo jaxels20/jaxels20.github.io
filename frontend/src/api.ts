@@ -8,6 +8,7 @@ import type {
   MatchDetail,
   PlayerComparison,
   PlayerProfile,
+  PlayerRanking,
   SearchResponse,
   SeasonsResponse,
   TeamHeadToHead,
@@ -81,6 +82,20 @@ export function usePlayer(slug: string | undefined, season: number | null) {
     queryFn: () => getJson<PlayerProfile>(`/players/${encodeURIComponent(slug ?? '')}`, { season }),
     enabled: Boolean(slug),
     staleTime: STALE,
+  })
+}
+
+/**
+ * Ranking points from badmintonplayer.dk. Loaded on its own so a slow or failing
+ * lookup never holds up the rest of the player page.
+ */
+export function usePlayerRanking(slug: string | undefined) {
+  return useQuery({
+    queryKey: ['ranking', slug],
+    queryFn: () => getJson<PlayerRanking>(`/players/${encodeURIComponent(slug ?? '')}/ranking`),
+    enabled: Boolean(slug),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
   })
 }
 

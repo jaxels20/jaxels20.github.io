@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { usePlayer } from '../api'
+import { usePlayer, usePlayerRanking } from '../api'
 import { TrendChart, WinLossBars } from '../components/charts'
 import { SeasonPicker } from '../components/SeasonPicker'
 import {
@@ -13,17 +13,19 @@ import {
   PctStat,
   PlayerLink,
   ResultBadge,
+  Skeleton,
   Stat,
   TeamLink,
 } from '../components/ui'
 import { useSeasonParam } from '../hooks/useSeasonParam'
-import { disciplineName, formatDate, formatPct, formatSigned, seasonLabel } from '../lib/format'
+import { disciplineName, formatDate, formatNumber, formatPct, formatSigned, seasonLabel } from '../lib/format'
 import { usePageTitle } from '../hooks/usePageTitle'
 
 export function PlayerPage() {
   const { slug } = useParams()
   const { season, setSeason, resolved, explicit } = useSeasonParam('latest')
   const { data, error, isLoading } = usePlayer(resolved ? slug : undefined, season)
+  const ranking = usePlayerRanking(slug)
   usePageTitle(data ? `${data.player.name} · Spiller` : null)
 
   useEffect(() => {
@@ -63,7 +65,18 @@ export function PlayerPage() {
                 </span>
               )}
               {hasData && data.byDiscipline.length > 0 && <span>{data.byDiscipline.map((d) => d.code).join(' · ')}</span>}
+              {ranking.data?.club && <span>{ranking.data.club}</span>}
               <FormPills results={data.form} />
+              {data.player.id && (
+                <a
+                  className="link"
+                  href={`https://badmintonplayer.dk/DBF/Spiller/VisSpiller/#${data.player.id}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Profil på badmintonplayer.dk ↗
+                </a>
+              )}
             </div>
           </div>
           <div className="page-tools">
@@ -133,6 +146,76 @@ export function PlayerPage() {
                   </>
                 )}
               </Card>
+
+              {(ranking.data || ranking.isLoading) && (
+                <Card
+                  title="Rangliste og niveau"
+                  subtitle="Point fra badmintonplayer.dk. Niveauet er spillerens tilmeldingsniveau ved hver sæsonstart."
+                  actions={
+                    ranking.data && (
+                      <a className="btn btn-sm" href={ranking.data.profileUrl} target="_blank" rel="noreferrer noopener">
+                        Se profil ↗
+                      </a>
+                    )
+                  }
+                >
+                  {ranking.isLoading ? (
+                    <Skeleton height={200} />
+                  ) : ranking.data ? (
+                    <>
+                      {ranking.data.lists.length > 0 ? (
+                        <div className="table-wrap">
+                          <table className="table table-compact">
+                            <thead>
+                              <tr>
+                                <th>Rangliste</th>
+                                <th>Række</th>
+                                <th className="r">Point</th>
+                                <th className="r">Kampe</th>
+                                <th className="r">Placering</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {ranking.data.lists.map((row) => (
+                                <tr key={row.list}>
+                                  <td className="primary">{row.list}</td>
+                                  <td className="dim">{row.group ?? '–'}</td>
+                                  <td className="r">
+                                    <strong>{formatNumber(row.points)}</strong>
+                                  </td>
+                                  <td className="r">{row.matches ?? '–'}</td>
+                                  <td className="r">{row.place ? `nr. ${formatNumber(row.place)}` : '–'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <p className="note" style={{ marginTop: '0.5rem' }}>
+                            Ranglistepoint for {seasonLabel(ranking.data.currentSeasonId)}. Ranglisterne opgøres kun for
+                            den igangværende sæson.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="note">Ingen ranglistepoint i den igangværende sæson.</p>
+                      )}
+
+                      {ranking.data.levels.length > 1 && (
+                        <>
+                          <div className="divider" style={{ margin: '0.9rem 0' }} />
+                          <h3 style={{ marginBottom: '0.5rem' }}>Niveau ved sæsonstart</h3>
+                          <TrendChart
+                            points={ranking.data.levels.map((l) => ({
+                              x: seasonLabel(l.seasonId),
+                              y: l.level,
+                              detail: 'niveau',
+                            }))}
+                            formatY={(v) => formatNumber(Math.round(v))}
+                          />
+                        </>
+                      )}
+                    </>
+                  ) : null}
+                </Card>
+              )}
 
               <Card title="Sæson for sæson" subtitle="Sejrsprocent pr. sæson">
                 <TrendChart
