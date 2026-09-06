@@ -19,7 +19,6 @@ CONTAINER_LIVE_DIR="/app/badminton_export_live"
 
 # Collection politeness and sanity thresholds.
 COLLECT_DELAY="${COLLECT_DELAY:-0.25}"
-MIN_LINES="${MIN_LINES:-50}"
 SHRINK_TOLERANCE_PCT="${SHRINK_TOLERANCE_PCT:-90}"
 
 log() { printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"; }
@@ -51,56 +50,79 @@ mkdir -p "$LIVE_DIR/staging" "$LOG_DIR"
 
 compose() { docker compose --env-file .env "$@"; }
 
-STEM="season_${SEASON}_all_groups"
-FILES=(
-    "${STEM}_full.json"
-    "${STEM}_groups.csv"
-    "${STEM}_team_matches.csv"
-    "${STEM}_individual_matches.csv"
-)
-
+# Guards against a failed or partial scrape replacing good data. An existing file
+# may not lose more than SHRINK_TOLERANCE_PCT of its rows; a season we have never
+# collected before only has to be non-empty, so a new season loads as soon as it starts.
 check_file() {
     local name="$1" new="$LIVE_DIR/staging/$1" old="$LIVE_DIR/$1" new_lines old_lines floor
-    [ -s "$new" ] || fail "collection produced no $name"
+    [ -s "$new" ] || { log "  $name: missing or empty"; return 1; }
     new_lines=$(wc -l < "$new")
-    [ "$new_lines" -ge "$MIN_LINES" ] || fail "$name has only $new_lines lines (expected at least $MIN_LINES)"
+    [ "$new_lines" -ge 2 ] || { log "  $name: only $new_lines lines"; return 1; }
     if [ -f "$old" ]; then
         old_lines=$(wc -l < "$old")
         floor=$((old_lines * SHRINK_TOLERANCE_PCT / 100))
-        [ "$new_lines" -ge "$floor" ] || fail "$name shrank from $old_lines to $new_lines lines; keeping the old data"
+        if [ "$new_lines" -lt "$floor" ]; then
+            log "  $name: shrank from $old_lines to $new_lines lines"
+            return 1
+        fi
         log "  $name: $old_lines -> $new_lines lines"
     else
-        log "  $name: $new_lines lines (new file)"
+        log "  $name: $new_lines lines (first collection)"
     fi
 }
 
-main() {
-    log "=== weekly refresh, season $SEASON ($((SEASON + 1)) spring), live dir $LIVE_DIR"
+# Collect, verify and load one season. Returns non-zero without touching the
+# warehouses if anything looks wrong, so the previous data simply stays in place.
+refresh_season() {
+    local season="$1" stem="season_${1}_all_groups" name
+    local files=("${stem}_full.json" "${stem}_groups.csv" "${stem}_team_matches.csv" "${stem}_individual_matches.csv")
 
-    log "collecting from badmintonplayer.dk (this takes a few minutes)"
-    compose run --rm -T backend python refresh_season_data.py \
-        --year "$SEASON" \
+    log "collecting season $season from badmintonplayer.dk (this takes a few minutes)"
+    if ! compose run --rm -T backend python refresh_season_data.py \
+        --year "$season" \
         --output-dir "$CONTAINER_LIVE_DIR/staging" \
         --delay "$COLLECT_DELAY" \
         --skip-individual-load \
-        --skip-team-load \
-        || fail "collection failed"
+        --skip-team-load; then
+        log "collection failed for season $season"
+        return 1
+    fi
 
     log "checking collected files"
-    for name in "${FILES[@]}"; do check_file "$name"; done
+    for name in "${files[@]}"; do
+        check_file "$name" || { log "season $season did not pass the checks; nothing was loaded"; return 1; }
+    done
 
     log "promoting staged files"
-    for name in "${FILES[@]}"; do
+    for name in "${files[@]}"; do
         mv -f "$LIVE_DIR/staging/$name" "$LIVE_DIR/$name"
     done
 
-    log "loading season $SEASON into both warehouses"
+    log "loading season $season into both warehouses"
     compose run --rm -T backend python refresh_season_data.py \
-        --year "$SEASON" \
+        --year "$season" \
         --output-dir "$CONTAINER_LIVE_DIR" \
         --skip-collect \
         --db-host db --db-port 5432 --db-user postgres --psql-bin psql \
-        || fail "warehouse load failed"
+        || fail "warehouse load failed for season $season"
+
+    log "season $season loaded"
+}
+
+main() {
+    log "=== weekly refresh, live dir $LIVE_DIR"
+
+    local target="$SEASON"
+    if refresh_season "$target"; then
+        :
+    elif [ -z "${1:-}" ] && [ ! -f "$LIVE_DIR/season_${target}_all_groups_individual_matches.csv" ]; then
+        # Around the season changeover the new season may not be published yet.
+        # Keep the previous one up to date instead of failing every week.
+        log "season $target is not available yet; refreshing season $((target - 1)) instead"
+        refresh_season "$((target - 1))" || fail "refresh failed for season $((target - 1))"
+    else
+        fail "refresh failed for season $target"
+    fi
 
     log "clearing API cache"
     compose exec -T backend python -c \
@@ -114,7 +136,7 @@ exec 9>"$LOCK_FILE"
 flock -n 9 || fail "another refresh is already running"
 
 LOG_FILE="$LOG_DIR/refresh-$(date -u +%Y%m%d-%H%M%S)-${SEASON}.log"
-main 2>&1 | tee -a "$LOG_FILE"
+main "${1:-}" 2>&1 | tee -a "$LOG_FILE"
 status=${PIPESTATUS[0]}
 find "$LOG_DIR" -name 'refresh-*.log' -mtime +90 -delete 2>/dev/null || true
 exit "$status"

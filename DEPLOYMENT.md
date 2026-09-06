@@ -168,7 +168,12 @@ from it during `COPY`.
 
 New data is written to a staging subdirectory first and only promoted if each file is present
 and has not lost more than 10 % of its rows, so a failed or partial scrape leaves the previous
-season data untouched. Every run writes a log to `/var/log/badminton/` (kept for 90 days).
+season data untouched. A season collected for the first time only has to be non-empty, so a new
+season loads as soon as its first matches appear.
+
+If the new season is not published yet (which happens around the changeover in late summer), the
+script falls back to refreshing the previous season instead of failing. Every run writes a log to
+`/var/log/badminton/`, kept for 90 days.
 
 Install the timer once, after setting `BADMINTON_LIVE_DIR` in `deploy/.env`:
 
