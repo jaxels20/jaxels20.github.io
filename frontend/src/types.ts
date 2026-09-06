@@ -519,6 +519,8 @@ export type LineupFormat = {
 export type LineupSetupPlayer = Entity & {
   sex: 'M' | 'F' | null
   team: Entity
+  /** Season the player was last seen for that team; may be the previous one early in a season. */
+  lastSeason: number
   teamMatches: number
   matches: number
   disciplines: string[]

@@ -170,13 +170,20 @@ def lineup_setup(settings: Settings, slug: str) -> dict[str, Any]:
         higher = [s for s in siblings if s["rank"] < rank]
         nearest_higher = higher[-1] if higher else None
 
-        roster = _team_players(cur, team["team_key"], season)
-        for r in roster:
-            r["team"] = entity(team["team_name"])
+        # Early in a season few players have appeared yet, so include the previous
+        # season's squad as well and mark which season each player was last seen in.
+        seasons_seen = sorted({h["season_id"] for h in history}, reverse=True)[:2] or [season]
+        roster: list[dict[str, Any]] = []
+
+        def add(team_key: int, team_name: str) -> None:
+            for s_id in seasons_seen:
+                for r in _team_players(cur, team_key, s_id):
+                    if not any(x["player_key"] == r["player_key"] for x in roster):
+                        roster.append({**r, "team": entity(team_name), "last_season": s_id})
+
+        add(team["team_key"], team["team_name"])
         for sib in siblings:
-            for r in _team_players(cur, sib["team_key"], season):
-                if not any(x["player_key"] == r["player_key"] for x in roster):
-                    roster.append({**r, "team": entity(sib["team_name"])})
+            add(sib["team_key"], sib["team_name"])
 
         higher_lineup = _latest_lineup(cur, nearest_higher["team_key"]) if nearest_higher else None
 
@@ -188,6 +195,7 @@ def lineup_setup(settings: Settings, slug: str) -> dict[str, Any]:
             **player_entity(r["player_name"], r["player_id"]),
             "sex": sexes.get(r["player_key"]),
             "team": r["team"],
+            "lastSeason": r["last_season"],
             "teamMatches": r["team_matches"],
             "matches": r["matches"],
             "disciplines": sorted((r["codes"] or "").split(",")),

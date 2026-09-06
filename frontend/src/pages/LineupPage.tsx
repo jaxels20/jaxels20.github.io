@@ -86,7 +86,7 @@ export function LineupPage() {
   useEffect(() => {
     if (!setup || initialisedFor === setup.team.slug) return
     const own = setup.players
-      .filter((p) => p.team.slug === setup.team.slug)
+      .filter((p) => p.team.slug === setup.team.slug && p.lastSeason === setup.seasonId)
       .map((p) => p.id)
       .filter((id): id is number => typeof id === 'number')
     const assigned = Object.values(parseAssignment(params, slotsFor(13))).flat()
@@ -339,7 +339,7 @@ export function LineupPage() {
             <div className="stack">
               <Card
                 title="Spillere"
-                subtitle={`Fra ${setup.team.name}s kampe i ${seasonLabel(setup.seasonId)}${setup.otherTeams.length ? ', plus klubbens andre hold' : ''}. Marker hvem der er til rådighed.`}
+                subtitle={`Spillere der har spillet for ${setup.team.name} i ${seasonLabel(setup.seasonId)} eller sæsonen før${setup.otherTeams.length ? ', plus klubbens andre hold' : ''}. Marker hvem der er til rådighed.`}
               >
                 <div className="table-wrap">
                   <table className="table table-compact lineup-roster">
@@ -376,9 +376,11 @@ export function LineupPage() {
                             </td>
                             <td className="primary">
                               <PlayerLink player={p} />
-                              {foreign && (
+                              {(foreign || p.lastSeason !== setup.seasonId) && (
                                 <div className="dim" style={{ fontWeight: 400, fontSize: '0.74rem' }}>
-                                  {p.team.name}
+                                  {foreign ? p.team.name : ''}
+                                  {foreign && p.lastSeason !== setup.seasonId ? ' · ' : ''}
+                                  {p.lastSeason !== setup.seasonId ? `sidst ${seasonLabel(p.lastSeason)}` : ''}
                                 </div>
                               )}
                             </td>
