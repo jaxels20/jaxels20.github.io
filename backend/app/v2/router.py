@@ -94,7 +94,7 @@ def match(match_id: int, season: int, group: int, settings: Settings = Depends(g
 def leaderboard(
     season: int,
     division: str | None = None,
-    min_matches: int = Query(default=8, ge=1, le=60),
+    min_matches: int | None = Query(default=None, ge=1, le=60),
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
     return _run(

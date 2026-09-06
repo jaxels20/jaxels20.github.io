@@ -9,7 +9,7 @@ export function HomePage() {
   const { data: seasonsData } = useSeasons()
   const latest = seasonsData?.seasons[0]?.seasonId ?? null
   const { data: leagues } = useLeagues(latest)
-  const { data: boards } = useLeaderboards(latest, null, 8)
+  const { data: boards } = useLeaderboards(latest, null, null)
 
   const mainDivisions = (leagues?.divisions ?? []).filter((d) => d.tier <= 5)
 
@@ -74,7 +74,7 @@ export function HomePage() {
       <section className="grid grid-2">
         <Card
           title="Højeste sejrsprocent"
-          subtitle={`${latest ? seasonLabel(latest) : ''} · mindst 8 kampe`}
+          subtitle={`${latest ? seasonLabel(latest) : ''}${boards ? ` · mindst ${boards.minMatches} kampe` : ''}`}
           actions={
             <Link className="btn btn-sm" to="/toplister">
               Alle toplister

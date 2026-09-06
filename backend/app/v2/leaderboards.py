@@ -89,7 +89,19 @@ def _player_entry(r: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def leaderboards(settings: Settings, season: int, division: str | None, min_matches: int) -> dict[str, Any]:
+def auto_min_matches(players: list[dict[str, Any]]) -> int:
+    """A fixed threshold empties every list early in a season, when nobody has played
+    many matches yet. Scale it to how far the season has come: half the busiest
+    player's match count, never above 8 and never below 2."""
+    if not players:
+        return 2
+    busiest = max(p["matches"] for p in players)
+    return max(2, min(8, busiest // 2))
+
+
+def leaderboards(
+    settings: Settings, season: int, division: str | None, min_matches: int | None
+) -> dict[str, Any]:
     with individual_cursor(settings) as cur:
         cur.execute(
             """
@@ -114,7 +126,9 @@ def leaderboards(settings: Settings, season: int, division: str | None, min_matc
         }
         cur.execute(PLAYER_QUERY, params)
         players = rows(cur)
-        cur.execute(PAIR_QUERY, {**params, "min_pair": max(3, min_matches // 2)})
+        if min_matches is None:
+            min_matches = auto_min_matches(players)
+        cur.execute(PAIR_QUERY, {**params, "min_pair": max(2, min_matches // 2)})
         pairs = rows(cur)
 
     def top(items: list[dict[str, Any]], key, extra, limit: int = 15) -> list[dict[str, Any]]:
@@ -124,7 +138,7 @@ def leaderboards(settings: Settings, season: int, division: str | None, min_matc
     qualified = [p for p in players if p["matches"] >= min_matches]
     singles_q = [p for p in players if p["singles"] >= min_matches]
     doubles_q = [p for p in players if p["doubles"] >= min_matches]
-    three_q = [p for p in players if p["three_set"] >= max(4, min_matches // 2)]
+    three_q = [p for p in players if p["three_set"] >= max(2, min_matches // 2)]
 
     lists = {
         "winPct": top(

@@ -7,7 +7,7 @@ import { useSeasonParam } from '../hooks/useSeasonParam'
 import { formatPct, seasonLabel } from '../lib/format'
 import type { LeaderboardEntry, LeaderboardPair } from '../types'
 
-const MIN_OPTIONS = [5, 8, 12, 20]
+const MIN_OPTIONS = [2, 5, 8, 12, 20]
 
 function EntryList({ entries, format }: { entries: LeaderboardEntry[]; format: (e: LeaderboardEntry) => string }) {
   if (!entries.length) return <div className="empty">Ingen spillere opfylder kravet.</div>
@@ -53,7 +53,8 @@ export function LeaderboardsPage() {
   const { season, setSeason, resolved } = useSeasonParam('latest')
   const [params, setParams] = useSearchParams()
   const division = params.get('raekke')
-  const minMatches = Number(params.get('min') ?? 8) || 8
+  const minParam = params.get('min')
+  const minMatches = minParam ? Number(minParam) || null : null
   const { data, error, isLoading, isFetching } = useLeaderboards(resolved ? season : null, division, minMatches)
 
   const update = (key: string, value: string | null) => {
@@ -72,14 +73,20 @@ export function LeaderboardsPage() {
           <div className="eyebrow">Toplister</div>
           <h1>Sæsonens bedste spillere {season ? seasonLabel(season) : ''}</h1>
           <p className="page-sub">
-            Walkovers tæller ikke med. Mindst {minMatches} spillede kampe kræves for procentlisterne.
+            Walkovers tæller ikke med. Mindst {data?.minMatches ?? '…'} spillede kampe kræves for
+            procentlisterne{minParam ? '' : ', valgt ud fra hvor langt sæsonen er'}.
           </p>
         </div>
         <div className="page-tools">
           <SeasonPicker value={season} allowAll={false} onChange={(next) => next !== null && setSeason(next)} />
           <label>
             <span className="sr-only">Minimum antal kampe</span>
-            <select className="select" value={minMatches} onChange={(e) => update('min', e.target.value)}>
+            <select
+              className="select"
+              value={minParam ?? ''}
+              onChange={(e) => update('min', e.target.value === '' ? null : e.target.value)}
+            >
+              <option value="">Automatisk minimum</option>
               {MIN_OPTIONS.map((n) => (
                 <option key={n} value={n}>
                   Min. {n} kampe

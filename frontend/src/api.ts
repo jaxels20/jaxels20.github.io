@@ -128,7 +128,7 @@ export function useMatch(season: number | null, groupId: number | null, matchId:
   })
 }
 
-export function useLeaderboards(season: number | null, division: string | null, minMatches: number) {
+export function useLeaderboards(season: number | null, division: string | null, minMatches: number | null) {
   return useQuery({
     queryKey: ['leaderboards', season, division, minMatches],
     queryFn: () => getJson<Leaderboards>('/leaderboards', { season, division, min_matches: minMatches }),
