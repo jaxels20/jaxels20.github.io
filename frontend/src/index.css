@@ -2433,3 +2433,17 @@ details.help > summary,
     grid-template-columns: 1fr;
   }
 }
+
+/* --- club page ------------------------------------------------------------ */
+.table tr.row-group-start td {
+  border-top: 1px solid var(--line-strong);
+}
+
+.table tr.table-note td {
+  border-top: 0;
+}
+
+td.accent {
+  color: var(--accent);
+  font-weight: 600;
+}

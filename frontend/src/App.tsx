@@ -10,6 +10,8 @@ import { HomePage } from './pages/HomePage'
 const GroupPage = lazy(() => import('./pages/GroupPage').then((m) => ({ default: m.GroupPage })))
 const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage').then((m) => ({ default: m.LeaderboardsPage })))
 const LeaguesPage = lazy(() => import('./pages/LeaguesPage').then((m) => ({ default: m.LeaguesPage })))
+const ClubPage = lazy(() => import('./pages/ClubPage').then((m) => ({ default: m.ClubPage })))
+const ClubsPage = lazy(() => import('./pages/ClubsPage').then((m) => ({ default: m.ClubsPage })))
 const LineupPage = lazy(() => import('./pages/LineupPage').then((m) => ({ default: m.LineupPage })))
 const MatchPage = lazy(() => import('./pages/MatchPage').then((m) => ({ default: m.MatchPage })))
 const PlayerComparePage = lazy(() => import('./pages/PlayerComparePage').then((m) => ({ default: m.PlayerComparePage })))
@@ -39,6 +41,8 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/hold/:slug" element={<TeamPage />} />
+        <Route path="/klubber" element={<ClubsPage />} />
+        <Route path="/klubber/:slug" element={<ClubPage />} />
         <Route path="/spillere/:slug" element={<PlayerPage />} />
         <Route path="/hold-mod-hold" element={<TeamH2HPage />} />
         <Route path="/spiller-mod-spiller" element={<PlayerComparePage />} />

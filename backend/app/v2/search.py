@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..settings import Settings
+from .clubs import search_clubs
 from .common import entity, individual_cursor, player_entity, rows
 
 
@@ -58,4 +59,5 @@ def search(settings: Settings, query: str, season: int | None, limit: int) -> di
             }
             for r in rows(cur)
         ]
-    return {"query": query, "teams": teams, "players": players}
+        clubs = search_clubs(cur, query, min(limit, 4))
+    return {"query": query, "clubs": clubs, "teams": teams, "players": players}

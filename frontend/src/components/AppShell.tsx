@@ -44,6 +44,7 @@ function useScrollReset() {
 
 const NAV = [
   { to: '/ligaer', label: 'Ligaer' },
+  { to: '/klubber', label: 'Klubber' },
   { to: '/toplister', label: 'Toplister' },
   { to: '/hold-mod-hold', label: 'Hold mod hold' },
   { to: '/spiller-mod-spiller', label: 'Spiller mod spiller' },

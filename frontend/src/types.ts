@@ -12,7 +12,9 @@ export type SeasonsResponse = {
 
 export type SearchTeam = Entity & { seasons: number; lastSeason: number; teamMatches: number }
 export type SearchPlayer = Entity & { matches: number; lastSeason: number; team: Entity | null }
-export type SearchResponse = { query: string; teams: SearchTeam[]; players: SearchPlayer[] }
+export type SearchClub = Entity & { teams: number; lastSeason: number }
+
+export type SearchResponse = { query: string; clubs: SearchClub[]; teams: SearchTeam[]; players: SearchPlayer[] }
 
 export type TeamSummary = {
   teamMatches: number
@@ -147,6 +149,7 @@ export type TeamSeasonEntry = {
 
 export type TeamProfile = {
   team: Entity
+  club: Entity
   seasonId: number | null
   seasons: TeamSeasonEntry[]
   summary: TeamSummary
@@ -608,3 +611,96 @@ export type OptimiseResult = {
   notes: string[]
   model: string
 }
+
+// --- clubs ---------------------------------------------------------------------
+
+export type ClubTeamGroup = {
+  division: string
+  groupName: string
+  groupId: number
+  position: number | null
+  groupSize: number
+  played: number
+  wins: number
+  draws: number
+  losses: number
+  points: number
+}
+
+export type ClubMatch = {
+  matchId: number
+  seasonId: number
+  groupId: number
+  groupName: string
+  division: string
+  date: string | null
+  round: number | null
+  team: Entity
+  opponent: Entity
+  home: boolean
+  played: boolean
+  result: Result | null
+  disciplinesWon: number | null
+  disciplinesLost: number | null
+}
+
+export type ClubTeam = ClubTeamGroup & {
+  team: Entity
+  rank: number
+  seasonId: number
+  tier: number
+  disciplinesFor: number
+  disciplinesAgainst: number
+  form: Result[]
+  latest: ClubMatch | null
+  /** Playoffs, relegation rounds and the like, besides the main group. */
+  alsoIn: ClubTeamGroup[]
+}
+
+export type ClubPlayer = {
+  player: Entity
+  teamMatches: number
+  matches: number
+  wins: number
+  losses: number
+  winPct: number | null
+  seasons: number
+  lastSeason: number
+  disciplines: string[]
+  teams: { team: Entity; teamMatches: number }[]
+}
+
+export type ClubProfile = {
+  club: Entity
+  seasonId: number | null
+  seasons: { seasonId: number; teams: number; teamMatches: number }[]
+  summary: {
+    teams: number
+    teamMatches: number
+    teamWins: number
+    teamDraws: number
+    teamLosses: number
+    teamWinPct: number | null
+    players: number
+    multiTeamPlayers: number
+  }
+  teams: ClubTeam[]
+  players: ClubPlayer[]
+  allTimePlayers: ClubPlayer[]
+  matches: ClubMatch[]
+  history: { seasonId: number; teams: ClubTeam[] }[]
+}
+
+export type ClubIndexRow = {
+  club: Entity
+  teams: number
+  topDivision: string | null
+  tier: number
+  played: number
+  wins: number
+  draws: number
+  losses: number
+  winPct: number | null
+}
+
+export type ClubIndex = { seasonId: number; clubs: ClubIndexRow[] }

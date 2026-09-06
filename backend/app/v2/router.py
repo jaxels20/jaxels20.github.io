@@ -6,6 +6,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from ..settings import Settings, get_settings
 from .common import NotFound, cached, clear_cache, individual_cursor, player_entity, slugify
+from .clubs import club_profile, list_clubs
 from .compare import player_comparison, team_head_to_head
 from .leaderboards import leaderboards
 from .lineup import club_setup, lineup_points, lineup_setup
@@ -66,6 +67,18 @@ def resolve(
 @router.get("/teams/{slug}")
 def team(slug: str, season: int | None = None, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
     return _run(f"team:{slug}:{season}", lambda: team_profile(settings, slug, season))
+
+
+@router.get("/clubs")
+def clubs(season: int, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
+    """All clubs in a season with team counts, best division and record."""
+    return _run(f"clubs:{season}", lambda: list_clubs(settings, season))
+
+
+@router.get("/clubs/{slug}")
+def club(slug: str, season: int | None = None, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
+    """A club: its teams and their divisions and standings, the most used players, and history."""
+    return _run(f"club:{slug}:{season}", lambda: club_profile(settings, slug, season))
 
 
 @router.get("/players/{slug}")

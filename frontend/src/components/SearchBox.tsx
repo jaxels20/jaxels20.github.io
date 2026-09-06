@@ -6,7 +6,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { seasonLabel } from '../lib/format'
 import type { Entity } from '../types'
 
-type Option = { kind: 'team' | 'player'; entity: Entity; meta: string }
+type Option = { kind: 'club' | 'team' | 'player'; entity: Entity; meta: string }
 
 export function SearchBox({
   size = 'compact',
@@ -37,6 +37,13 @@ export function SearchBox({
 
   const options = useMemo<Option[]>(() => {
     if (!data) return []
+    const clubs: Option[] = restrict
+      ? []
+      : (data.clubs ?? []).map((c) => ({
+          kind: 'club',
+          entity: { name: c.name, slug: c.slug },
+          meta: `Klub · ${c.teams} hold i ${seasonLabel(c.lastSeason)}`,
+        }))
     const teams: Option[] = restrict === 'player'
       ? []
       : data.teams.map((t) => ({
@@ -51,7 +58,7 @@ export function SearchBox({
           entity: { name: p.name, slug: p.slug },
           meta: `${p.team?.name ?? 'Ukendt hold'} · ${p.matches} kampe`,
         }))
-    return [...teams, ...players]
+    return [...clubs, ...teams, ...players]
   }, [data, restrict])
 
   useEffect(() => {
@@ -90,10 +97,11 @@ export function SearchBox({
       return
     }
     setQuery('')
-    navigate(option.kind === 'team' ? `/hold/${option.entity.slug}` : `/spillere/${option.entity.slug}`)
+    navigate(option.kind === 'club' ? `/klubber/${option.entity.slug}` : option.kind === 'team' ? `/hold/${option.entity.slug}` : `/spillere/${option.entity.slug}`)
   }
 
   const showMenu = open && query.trim().length >= 2
+  const clubOptions = options.filter((o) => o.kind === 'club')
   const teamOptions = options.filter((o) => o.kind === 'team')
   const playerOptions = options.filter((o) => o.kind === 'player')
 
@@ -164,6 +172,12 @@ export function SearchBox({
       </div>
       {showMenu && (
         <div className="search-menu" role="listbox" id={listId}>
+          {clubOptions.length > 0 && (
+            <>
+              <div className="search-group">Klubber</div>
+              {clubOptions.map(renderOption)}
+            </>
+          )}
           {teamOptions.length > 0 && (
             <>
               <div className="search-group">Hold</div>
@@ -177,7 +191,7 @@ export function SearchBox({
             </>
           )}
           {options.length === 0 && (
-            <div className="search-empty">{isFetching ? 'Søger…' : 'Ingen hold eller spillere matcher søgningen.'}</div>
+            <div className="search-empty">{isFetching ? 'Søger…' : 'Ingen klubber, hold eller spillere matcher søgningen.'}</div>
           )}
         </div>
       )}

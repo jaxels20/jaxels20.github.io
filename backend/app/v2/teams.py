@@ -5,6 +5,7 @@ from typing import Any
 import psycopg
 
 from ..settings import Settings
+from .clubs import club_base, club_entity
 from .common import (
     DOUBLES_CODES,
     NotFound,
@@ -421,6 +422,7 @@ def team_profile(settings: Settings, slug: str, season: int | None) -> dict[str,
         matches = team_matches(cur, params)
         return {
             "team": entity(team["team_name"]),
+            "club": club_entity(club_base(team["team_name"])[0]),
             "seasonId": season,
             "seasons": team_seasons(cur, team["team_key"]),
             "summary": summary,

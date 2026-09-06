@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from ..settings import Settings
+from .clubs import club_base
 from .common import cached, entity, individual_cursor, one, player_entity, rows
 from .ranking import SourceUnavailable, _season_snapshot, current_season, ranking_list_status
 from .teams import resolve_team
@@ -30,12 +31,6 @@ def team_format(division: str | None) -> dict[str, Any]:
     return {"matches": 13, "minMen": 6, "minWomen": 4, "maxPerPlayer": 2, "division": name}
 
 
-def club_base(team_name: str) -> tuple[str, int]:
-    """'Vendsyssel 2' -> ('Vendsyssel', 2); 'Vendsyssel' -> ('Vendsyssel', 1)."""
-    match = re.match(r"^(.*\S)\s+(\d+)$", team_name)
-    if match:
-        return match.group(1), int(match.group(2))
-    return team_name, 1
 
 
 SEX_SQL = """

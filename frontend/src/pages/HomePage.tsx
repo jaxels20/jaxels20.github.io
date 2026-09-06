@@ -30,6 +30,7 @@ export function HomePage() {
         <div className="home-quick">
           <span>Genveje:</span>
           <Link to={`/ligaer/${latest ?? ''}`}>Stillinger &amp; resultater</Link>
+          <Link to="/klubber">Klubber</Link>
           <Link to="/toplister">Toplister</Link>
           <Link to="/hold-mod-hold">Hold mod hold</Link>
           <Link to="/spiller-mod-spiller">Spiller mod spiller</Link>

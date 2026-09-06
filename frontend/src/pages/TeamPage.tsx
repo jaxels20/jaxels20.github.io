@@ -69,6 +69,9 @@ export function TeamPage() {
             <Link className="btn btn-ghost" to={`/holdopstilling?hold=${data.team.slug}`}>
               Sæt holdet
             </Link>
+            <Link className="btn btn-ghost" to={`/klubber/${data.club.slug}`}>
+              Se klubben
+            </Link>
           </div>
         </div>
       </section>

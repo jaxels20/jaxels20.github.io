@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 
 import type {
+  ClubIndex,
+  ClubProfile,
   Entity,
   GroupDetail,
   Leaderboards,
@@ -76,6 +78,24 @@ export function useTeam(slug: string | undefined, season: number | null) {
     queryKey: ['team', slug, season],
     queryFn: () => getJson<TeamProfile>(`/teams/${encodeURIComponent(slug ?? '')}`, { season }),
     enabled: Boolean(slug),
+    staleTime: STALE,
+  })
+}
+
+export function useClub(slug: string | undefined, season: number | null) {
+  return useQuery({
+    queryKey: ['club', slug, season],
+    queryFn: () => getJson<ClubProfile>(`/clubs/${slug}`, { season }),
+    enabled: Boolean(slug),
+    staleTime: STALE,
+  })
+}
+
+export function useClubs(season: number | null) {
+  return useQuery({
+    queryKey: ['clubs', season],
+    queryFn: () => getJson<ClubIndex>('/clubs', { season }),
+    enabled: season !== null,
     staleTime: STALE,
   })
 }
