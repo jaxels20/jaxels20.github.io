@@ -1,0 +1,14 @@
+[Unit]
+Description=Weekly badminton data refresh (Monday morning, Danish time)
+
+[Timer]
+# Danish team matches are played at weekends, so Monday morning picks up the
+# whole round. The timezone is explicit because the server clock runs on UTC.
+OnCalendar=Mon *-*-* 04:30:00 Europe/Copenhagen
+# Catch up after downtime instead of skipping the week.
+Persistent=true
+RandomizedDelaySec=15m
+AccuracySec=1m
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Refresh the current badminton season from badmintonplayer.dk
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/jaxels20.github.io/deploy/weekly-refresh.sh
+TimeoutStartSec=2h
+# Collection is network-bound and retries on its own; a failed run just leaves
+# the previous data in place, so retry once an hour later rather than at once.
+Restart=no

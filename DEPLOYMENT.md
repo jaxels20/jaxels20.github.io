@@ -149,6 +149,41 @@ Then in GitHub **Settings -> Pages**, set **Custom domain** to `badmintonintelli
 
 The `api` record must resolve directly to the server (not through a CDN proxy) so Caddy can complete the Let's Encrypt challenge.
 
+## 5c) Weekly data refresh
+
+`deploy/weekly-refresh.sh` collects the current season from badmintonplayer.dk and loads
+it into both warehouses. A systemd timer runs it every Monday at 04:30 Danish time.
+
+The season is derived from the date (August or later means the season starting that year),
+so nothing needs changing when a new season begins. Pass a year to refresh a different one:
+
+```bash
+/root/jaxels20.github.io/deploy/weekly-refresh.sh 2024
+```
+
+Collected files live in `BADMINTON_LIVE_DIR` (set in `deploy/.env`), which must sit **outside**
+the git checkout because deploys run `git reset --hard`. The script refuses to run otherwise.
+Both containers mount that directory: the backend writes to it, and the database reads the CSVs
+from it during `COPY`.
+
+New data is written to a staging subdirectory first and only promoted if each file is present
+and has not lost more than 10 % of its rows, so a failed or partial scrape leaves the previous
+season data untouched. Every run writes a log to `/var/log/badminton/` (kept for 90 days).
+
+Install the timer once, after setting `BADMINTON_LIVE_DIR` in `deploy/.env`:
+
+```bash
+install -m 644 deploy/badminton-refresh.{service,timer} /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now badminton-refresh.timer
+```
+
+Check it:
+
+```bash
+systemctl list-timers badminton-refresh.timer
+journalctl -u badminton-refresh.service -n 50
+```
+
 ## 6) Ongoing operations
 
 From `deploy/`:

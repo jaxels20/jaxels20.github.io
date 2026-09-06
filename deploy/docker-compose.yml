@@ -10,6 +10,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../badminton_export:/app/badminton_export:ro
+      # Server-side COPY runs inside this container, so it must see the same
+      # live export directory as the backend (read-only is enough here).
+      - ${BADMINTON_LIVE_DIR:-../badminton_export}:/app/badminton_export_live:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
       interval: 10s
@@ -34,6 +37,8 @@ services:
       PORT: 8000
     volumes:
       - ../badminton_export:/app/badminton_export:ro
+      # Writable: the weekly refresh collects new season files in here.
+      - ${BADMINTON_LIVE_DIR:-../badminton_export}:/app/badminton_export_live
     depends_on:
       db:
         condition: service_healthy
