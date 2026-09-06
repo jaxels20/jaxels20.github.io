@@ -78,3 +78,16 @@ export function record(wins: number, draws: number | undefined, losses: number):
 export function pluralize(count: number, singular: string, plural: string): string {
   return `${formatNumber(count)} ${count === 1 ? singular : plural}`
 }
+
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '–'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('da-DK', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}

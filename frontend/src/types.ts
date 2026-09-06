@@ -2,7 +2,13 @@ export type Entity = { name: string; slug: string }
 export type Result = 'W' | 'L' | 'D'
 
 export type Season = { seasonId: number; label: string }
-export type SeasonsResponse = { seasons: Season[] }
+export type SeasonsResponse = {
+  seasons: Season[]
+  /** When the season exports were last replaced by the weekly refresh. */
+  dataUpdated: string | null
+  /** Date of the most recent match that has a result. */
+  latestMatch: string | null
+}
 
 export type SearchTeam = Entity & { seasons: number; lastSeason: number; teamMatches: number }
 export type SearchPlayer = Entity & { matches: number; lastSeason: number; team: Entity | null }

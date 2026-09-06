@@ -2,7 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 import { usePlayerComparison } from '../api'
 import { ButterflyBars } from '../components/charts'
-import { SearchBox } from '../components/SearchBox'
+import { VersusPicker } from '../components/VersusPicker'
 import { SeasonPicker } from '../components/SeasonPicker'
 import { Card, EmptyState, ErrorState, FormPills, PageSkeleton, PlayerLink, TeamLink } from '../components/ui'
 import { useSeasonParam } from '../hooks/useSeasonParam'
@@ -86,10 +86,24 @@ export function PlayerComparePage() {
   const { season, setSeason } = useSeasonParam('all')
   const { data, error, isLoading } = usePlayerComparison(a, b, season)
 
-  const setSide = (key: 'a' | 'b', slug: string) => {
+  const setSide = (key: 'a' | 'b', slug: string | null) => {
     setParams((prev) => {
       const copy = new URLSearchParams(prev)
-      copy.set(key, slug)
+      if (slug === null) copy.delete(key)
+      else copy.set(key, slug)
+      return copy
+    })
+  }
+
+  const swap = () => {
+    setParams((prev) => {
+      const copy = new URLSearchParams(prev)
+      const first = copy.get('a')
+      const second = copy.get('b')
+      if (second) copy.set('a', second)
+      else copy.delete('a')
+      if (first) copy.set('b', first)
+      else copy.delete('b')
       return copy
     })
   }
@@ -107,20 +121,14 @@ export function PlayerComparePage() {
         </div>
       </div>
 
-      <div className="grid grid-2">
-        <div>
-          <div className="eyebrow" style={{ marginBottom: '0.4rem' }}>
-            Spiller A
-          </div>
-          <SearchBox mode="pick" restrict="player" placeholder="Vælg spiller A" defaultValue={data?.a.player.name ?? ''} onPick={(o) => setSide('a', o.entity.slug)} />
-        </div>
-        <div>
-          <div className="eyebrow" style={{ marginBottom: '0.4rem' }}>
-            Spiller B
-          </div>
-          <SearchBox mode="pick" restrict="player" placeholder="Vælg spiller B" defaultValue={data?.b.player.name ?? ''} onPick={(o) => setSide('b', o.entity.slug)} />
-        </div>
-      </div>
+      <VersusPicker
+        kind="player"
+        a={data?.a.player ?? null}
+        b={data?.b.player ?? null}
+        slugs={[a, b]}
+        onPick={setSide}
+        onSwap={swap}
+      />
 
       {!a || !b ? (
         <EmptyState>Vælg to spillere for at se sammenligningen.</EmptyState>

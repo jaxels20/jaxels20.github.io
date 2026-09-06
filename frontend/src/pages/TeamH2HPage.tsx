@@ -2,9 +2,9 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 import { useTeamHeadToHead } from '../api'
 import { ButterflyBars } from '../components/charts'
-import { SearchBox } from '../components/SearchBox'
+import { VersusPicker } from '../components/VersusPicker'
 import { SeasonPicker } from '../components/SeasonPicker'
-import { Card, EmptyState, ErrorState, FormPills, PageSkeleton, ResultBadge, TeamLink } from '../components/ui'
+import { Card, EmptyState, ErrorState, FormPills, PageSkeleton, TeamLink } from '../components/ui'
 import { useSeasonParam } from '../hooks/useSeasonParam'
 import { disciplineName, formatDate, formatPct, record, seasonLabel } from '../lib/format'
 
@@ -37,10 +37,24 @@ export function TeamH2HPage() {
   const { season, setSeason } = useSeasonParam('all')
   const { data, error, isLoading } = useTeamHeadToHead(a, b, season)
 
-  const setSide = (key: 'a' | 'b', slug: string) => {
+  const setSide = (key: 'a' | 'b', slug: string | null) => {
     setParams((prev) => {
       const copy = new URLSearchParams(prev)
-      copy.set(key, slug)
+      if (slug === null) copy.delete(key)
+      else copy.set(key, slug)
+      return copy
+    })
+  }
+
+  const swap = () => {
+    setParams((prev) => {
+      const copy = new URLSearchParams(prev)
+      const first = copy.get('a')
+      const second = copy.get('b')
+      if (second) copy.set('a', second)
+      else copy.delete('a')
+      if (first) copy.set('b', first)
+      else copy.delete('b')
       return copy
     })
   }
@@ -58,20 +72,14 @@ export function TeamH2HPage() {
         </div>
       </div>
 
-      <div className="grid grid-2">
-        <div>
-          <div className="eyebrow" style={{ marginBottom: '0.4rem' }}>
-            Hold A
-          </div>
-          <SearchBox mode="pick" restrict="team" placeholder="Vælg hold A" defaultValue={data?.a.team.name ?? ''} onPick={(o) => setSide('a', o.entity.slug)} />
-        </div>
-        <div>
-          <div className="eyebrow" style={{ marginBottom: '0.4rem' }}>
-            Hold B
-          </div>
-          <SearchBox mode="pick" restrict="team" placeholder="Vælg hold B" defaultValue={data?.b.team.name ?? ''} onPick={(o) => setSide('b', o.entity.slug)} />
-        </div>
-      </div>
+      <VersusPicker
+        kind="team"
+        a={data?.a.team ?? null}
+        b={data?.b.team ?? null}
+        slugs={[a, b]}
+        onPick={setSide}
+        onSwap={swap}
+      />
 
       {!a || !b ? (
         <EmptyState>Vælg to hold for at se sammenligningen.</EmptyState>
@@ -145,34 +153,41 @@ export function TeamH2HPage() {
                       <thead>
                         <tr>
                           <th>Dato</th>
+                          <th>Kamp</th>
+                          <th className="c">Resultat</th>
+                          <th>Vinder</th>
                           <th>Række</th>
-                          <th className="c">Hjemme</th>
-                          <th className="c">Res. (A)</th>
-                          <th className="r">Kampe</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {data.direct.matches.map((m) => (
-                          <tr key={m.matchId}>
-                            <td>
-                              <Link className="link" to={`/kampe/${m.seasonId}/${m.groupId}/${m.matchId}`}>
-                                {formatDate(m.date)}
-                              </Link>
-                            </td>
-                            <td className="dim">
-                              {m.division} · {m.groupName}
-                            </td>
-                            <td className="c dim">{m.aHome ? data.a.team.name : data.b.team.name}</td>
-                            <td className="c">
-                              <strong>
-                                <ResultBadge result={m.result} />
-                              </strong>
-                            </td>
-                            <td className="r">
-                              {m.aDisciplines}–{m.bDisciplines}
-                            </td>
-                          </tr>
-                        ))}
+                        {data.direct.matches.map((m) => {
+                          const home = m.aHome ? data.a.team : data.b.team
+                          const away = m.aHome ? data.b.team : data.a.team
+                          const homeWon = m.aHome ? m.aDisciplines : m.bDisciplines
+                          const awayWon = m.aHome ? m.bDisciplines : m.aDisciplines
+                          const winner = m.result === 'D' ? null : m.result === 'W' ? data.a.team : data.b.team
+                          return (
+                            <tr key={m.matchId}>
+                              <td>
+                                <Link className="link" to={`/kampe/${m.seasonId}/${m.groupId}/${m.matchId}`}>
+                                  {formatDate(m.date)}
+                                </Link>
+                              </td>
+                              <td className="primary">
+                                <TeamLink team={home} /> <span className="dim">–</span> <TeamLink team={away} />
+                              </td>
+                              <td className="c">
+                                <strong>
+                                  {homeWon}–{awayWon}
+                                </strong>
+                              </td>
+                              <td className={winner ? 'primary' : 'dim'}>{winner ? winner.name : 'Uafgjort'}</td>
+                              <td className="dim">
+                                {m.division} · {m.groupName}
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -207,8 +222,8 @@ export function TeamH2HPage() {
                       <thead>
                         <tr>
                           <th>Hold</th>
-                          <th className="r">A</th>
-                          <th className="r">B</th>
+                          <th className="r wrap">{data.a.team.name}</th>
+                          <th className="r wrap">{data.b.team.name}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -232,7 +247,7 @@ export function TeamH2HPage() {
                   </div>
                 )}
                 <p className="note" style={{ marginTop: '0.6rem' }}>
-                  A = {data.a.team.name}, B = {data.b.team.name}. Vundne–tabte holdkampe.
+                  Vundne–tabte holdkampe mod hver fælles modstander.
                 </p>
               </Card>
             </div>

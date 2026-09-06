@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
+import { useSeasons } from '../api'
+import { formatDate, formatDateTime } from '../lib/format'
 import { SearchBox } from './SearchBox'
 
 function usePageTracking() {
@@ -38,6 +40,7 @@ export function AppShell() {
   useScrollReset()
   const location = useLocation()
   const isHome = location.pathname === '/'
+  const { data: seasons } = useSeasons()
 
   return (
     <div className="shell">
@@ -77,7 +80,14 @@ export function AppShell() {
           </div>
           <div>
             Data fra Badminton Danmarks holdturnering (Badmintonligaen til Danmarksserien), sæson 2020/21 og frem.
-            Resultater hentes fra badmintonplayer.dk.
+            Resultater hentes fra badmintonplayer.dk hver mandag.
+            {seasons?.dataUpdated && (
+              <>
+                <br />
+                Data opdateret {formatDateTime(seasons.dataUpdated)}
+                {seasons.latestMatch && <> · seneste spillede kamp {formatDate(seasons.latestMatch)}</>}
+              </>
+            )}
           </div>
         </div>
       </footer>

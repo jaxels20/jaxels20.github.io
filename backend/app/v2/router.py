@@ -5,13 +5,13 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..settings import Settings, get_settings
-from .common import NotFound, cached, clear_cache
+from .common import NotFound, cached, clear_cache, individual_cursor, player_entity, slugify
 from .compare import player_comparison, team_head_to_head
 from .leaderboards import leaderboards
 from .leagues import group_detail, list_leagues, list_seasons, match_detail
-from .players import player_profile
+from .players import player_profile, resolve_player
 from .search import search
-from .teams import team_profile
+from .teams import resolve_team, team_profile
 
 router = APIRouter(prefix="/api/v2", tags=["v2"])
 
@@ -27,7 +27,7 @@ def _run(key: str, build) -> Any:
 
 @router.get("/seasons")
 def seasons(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
-    return {"seasons": _run("seasons", lambda: list_seasons(settings))}
+    return _run("seasons", lambda: list_seasons(settings))
 
 
 @router.get("/search")
@@ -39,6 +39,25 @@ def search_endpoint(
 ) -> dict[str, Any]:
     q = q.strip()
     return _run(f"search:{q.lower()}:{season}:{limit}", lambda: search(settings, q, season, limit))
+
+
+@router.get("/resolve")
+def resolve(
+    kind: str = Query(pattern="^(team|player)$"),
+    slug: str = Query(min_length=1, max_length=200),
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
+    """Slug to display name, so a page linked with only one side chosen can show it."""
+
+    def build() -> dict[str, Any]:
+        with individual_cursor(settings) as cur:
+            if kind == "team":
+                row = resolve_team(cur, slug)
+                return {"name": row["team_name"], "slug": slugify(row["team_name"])}
+            row = resolve_player(cur, slug)
+            return player_entity(row["player_name"], row["player_id"])
+
+    return _run(f"resolve:{kind}:{slug}", build)
 
 
 @router.get("/teams/{slug}")

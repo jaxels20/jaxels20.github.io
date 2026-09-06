@@ -60,8 +60,9 @@ player with that name.
 ## API endpoints (v2, JSON)
 
 - `GET /api/health`
-- `GET /api/v2/seasons`
+- `GET /api/v2/seasons` (also returns `dataUpdated` and `latestMatch`)
 - `GET /api/v2/search?q=<text>&season=<year>&limit=8` (teams + players)
+- `GET /api/v2/resolve?kind=team|player&slug=<slug>` (slug to display name)
 - `GET /api/v2/teams/{slug}?season=<year>`
 - `GET /api/v2/players/{slug}?season=<year>`
 - `GET /api/v2/h2h/teams?a=<slug>&b=<slug>&season=<year>`
@@ -69,7 +70,7 @@ player with that name.
 - `GET /api/v2/leagues?season=<year>`
 - `GET /api/v2/groups/{league_group_id}?season=<year>`
 - `GET /api/v2/matches/{match_id}?season=<year>&group=<league_group_id>`
-- `GET /api/v2/leaderboards?season=<year>&division=<name>&min_matches=8`
+- `GET /api/v2/leaderboards?season=<year>&division=<name>&min_matches=<n>` (omit `min_matches` to scale it to the season's progress)
 
 Responses are cached in-process for 10 minutes; `POST /api/v2/cache/clear` empties the cache after a data reload.
 The legacy psql-report endpoints under `/api/reports/*` still exist but are no longer used by the frontend.

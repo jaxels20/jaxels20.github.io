@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import type {
+  Entity,
   GroupDetail,
   Leaderboards,
   LeaguesResponse,
@@ -98,6 +99,17 @@ export function usePlayerComparison(a: string | null, b: string | null, season: 
     queryFn: () => getJson<PlayerComparison>('/compare/players', { a, b, season }),
     enabled: Boolean(a && b && a !== b),
     staleTime: STALE,
+  })
+}
+
+/** Slug to display name, for a comparison page opened with only one side chosen. */
+export function useResolveEntity(kind: 'team' | 'player', slug: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['resolve', kind, slug],
+    queryFn: () => getJson<Entity>('/resolve', { kind, slug }),
+    enabled: enabled && Boolean(slug),
+    staleTime: Infinity,
+    retry: false,
   })
 }
 

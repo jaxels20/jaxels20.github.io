@@ -1079,6 +1079,129 @@ p {
   }
 }
 
+/* ---------- versus picker ---------- */
+
+.versus-picker {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.picker {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.picker-label {
+  color: var(--text-3);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.picker-chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  height: 44px;
+  padding: 0 0.6rem 0 0.95rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.picker-name {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.picker-change {
+  flex: none;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.picker-change:hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.versus-picker-mid {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  padding-bottom: 0.35rem;
+}
+
+.versus-picker-word {
+  color: var(--text-3);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.versus-swap {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.versus-swap:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.versus-swap:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.table th.wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.78rem;
+  min-width: 4.5rem;
+}
+
+@media (max-width: 680px) {
+  .versus-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .versus-picker-mid {
+    grid-auto-flow: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0;
+  }
+}
+
 /* ---------- butterfly (head-to-head) bars ---------- */
 
 .bf {

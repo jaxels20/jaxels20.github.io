@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
-from ..settings import Settings
+from ..settings import ROOT_DIR, Settings
 from .common import NotFound, discipline_sort_key, entity, individual_cursor, match_type_label, one, pct, player_entities, rows, team_cursor
 
 DIVISION_TIER = {
@@ -24,10 +26,39 @@ def division_tier(name: str) -> int:
     return 99
 
 
-def list_seasons(settings: Settings) -> list[dict[str, Any]]:
+# Where the season exports live: the writable directory the weekly refresh promotes
+# files into, then the copy committed to the repository.
+EXPORT_DIRS = (Path("/app/badminton_export_live"), ROOT_DIR / "badminton_export")
+
+
+def data_updated_at() -> str | None:
+    """When the season data was last replaced, taken from the newest export file."""
+    newest: float | None = None
+    for directory in EXPORT_DIRS:
+        if not directory.is_dir():
+            continue
+        for path in directory.glob("season_*_all_groups_individual_matches.csv"):
+            stamp = path.stat().st_mtime
+            if newest is None or stamp > newest:
+                newest = stamp
+    if newest is None:
+        return None
+    return datetime.fromtimestamp(newest, tz=timezone.utc).isoformat()
+
+
+def list_seasons(settings: Settings) -> dict[str, Any]:
     with team_cursor(settings) as cur:
         cur.execute("SELECT season_id, season_label FROM dim_season ORDER BY season_id DESC")
-        return [{"seasonId": r["season_id"], "label": r["season_label"]} for r in rows(cur)]
+        seasons = [{"seasonId": r["season_id"], "label": r["season_label"]} for r in rows(cur)]
+        cur.execute(
+            """
+            SELECT max(dd.full_date) AS latest
+            FROM fact_team_match f JOIN dim_date dd ON dd.date_key = f.match_date_key
+            WHERE f.home_team_points IS NOT NULL
+            """
+        )
+        latest = (one(cur) or {}).get("latest")
+    return {"seasons": seasons, "dataUpdated": data_updated_at(), "latestMatch": latest}
 
 
 def list_leagues(settings: Settings, season: int) -> dict[str, Any]:
