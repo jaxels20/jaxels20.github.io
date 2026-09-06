@@ -151,34 +151,6 @@ export function LineupPage() {
     () => (format ? checkLineup(format, slots, assignment, higher) : []),
     [format, slots, assignment, higher],
   )
-  const status = verdict(issues)
-
-  // Optimiser: opponent in the URL (mod=...), result in state.
-  const opponentSlug = params.get('mod')
-  const opponentName = useResolveEntity('team', opponentSlug, Boolean(opponentSlug))
-  const [optimised, setOptimised] = useState<OptimiseResult | null>(null)
-  const [optimising, setOptimising] = useState(false)
-  const [optimiseError, setOptimiseError] = useState<string | null>(null)
-  const [chosenCandidate, setChosenCandidate] = useState(0)
-
-  const applyCandidate = (slotsToApply: Record<string, number[]>) => {
-    setParams(
-      (prev) => {
-        const copy = new URLSearchParams(prev)
-        for (const slot of slotsFor(13)) copy.delete(slot.key.toLowerCase())
-        for (const [key, ids] of Object.entries(slotsToApply)) copy.set(key.toLowerCase(), ids.join(','))
-        return copy
-      },
-      { replace: true },
-    )
-  }
-
-  const chooseCandidate = (index: number) => {
-    setChosenCandidate(index)
-    const candidate = optimised?.candidates[index]
-    if (candidate) applyCandidate(candidate.slots)
-  }
-
   const setSlot = (slot: SlotSpec, position: number, id: number | null) => {
     setParams((prev) => {
       const copy = new URLSearchParams(prev)
@@ -207,6 +179,40 @@ export function LineupPage() {
       else copy.set(key, value)
       return copy
     })
+  }
+
+  const status = verdict(issues)
+
+  // Two use cases on one page: checking a lineup by hand, or having one proposed
+  // against an opponent. The tab lives in the URL; an opponent in the URL implies the latter.
+  const requestedView = params.get('visning')
+  const view: 'tjek' | 'optimer' = requestedView === 'optimer' || (!requestedView && params.get('mod')) ? 'optimer' : 'tjek'
+  const setView = (next: 'tjek' | 'optimer') => setParam('visning', next)
+
+  // Optimiser: opponent in the URL (mod=...), result in state.
+  const opponentSlug = params.get('mod')
+  const opponentName = useResolveEntity('team', opponentSlug, Boolean(opponentSlug))
+  const [optimised, setOptimised] = useState<OptimiseResult | null>(null)
+  const [optimising, setOptimising] = useState(false)
+  const [optimiseError, setOptimiseError] = useState<string | null>(null)
+  const [chosenCandidate, setChosenCandidate] = useState(0)
+
+  const applyCandidate = (slotsToApply: Record<string, number[]>) => {
+    setParams(
+      (prev) => {
+        const copy = new URLSearchParams(prev)
+        for (const slot of slotsFor(13)) copy.delete(slot.key.toLowerCase())
+        for (const [key, ids] of Object.entries(slotsToApply)) copy.set(key.toLowerCase(), ids.join(','))
+        return copy
+      },
+      { replace: true },
+    )
+  }
+
+  const chooseCandidate = (index: number) => {
+    setChosenCandidate(index)
+    const candidate = optimised?.candidates[index]
+    if (candidate) applyCandidate(candidate.slots)
   }
 
   const chooseTeam = (slug: string) => {
@@ -266,8 +272,8 @@ export function LineupPage() {
           </div>
           <h1>Er holdet lovligt sat?</h1>
           <p className="page-sub">
-            Vælg et hold, marker hvem der kan spille, og sæt holdet. Opstillingen tjekkes mod DH-reglementets § 37 og
-            § 38 med ranglistepoint fra badmintonplayer.dk.
+            To værktøjer: tjek om en opstilling er lovlig efter DH-reglementets § 37 og § 38, eller få foreslået den
+            opstilling der vinder flest kampe mod en bestemt modstander. Ranglistepoint hentes fra badmintonplayer.dk.
           </p>
         </div>
       </div>
@@ -296,6 +302,17 @@ export function LineupPage() {
         <PageSkeleton />
       ) : (
         <>
+          <div className="view-tabs" role="tablist" aria-label="Værktøj">
+            <button type="button" role="tab" aria-selected={view === 'tjek'} className={view === 'tjek' ? 'active' : ''} onClick={() => setView('tjek')}>
+              <strong>Tjek en opstilling</strong>
+              <span>Sæt holdet i hånden og se, om det er lovligt</span>
+            </button>
+            <button type="button" role="tab" aria-selected={view === 'optimer'} className={view === 'optimer' ? 'active' : ''} onClick={() => setView('optimer')}>
+              <strong>Find den bedste opstilling</strong>
+              <span>Mod en bestemt modstander, ud fra tidligere kampe</span>
+            </button>
+          </div>
+
           <section className={`lineup-verdict lineup-verdict-${status}`} aria-live="polite">
             <div>
               <strong>
@@ -334,6 +351,8 @@ export function LineupPage() {
 
           <div className="grid grid-main lineup-grid">
             <div className="stack">
+              {view === 'optimer' ? (
+                <>
               <Card
                 title="Bedste opstilling mod en modstander"
                 subtitle="Finder den lovlige opstilling med flest forventede vundne kampe mod modstanderens seneste opstilling. Bruger de spillere, der er markeret til rådighed."
@@ -411,10 +430,14 @@ export function LineupPage() {
                               <span className="muted" style={{ fontSize: '1rem' }}> af {optimised.format.matches}</span>
                             </div>
                           </div>
-                          <p className="note" style={{ maxWidth: '36ch' }}>
-                            Forslaget er sat ind i opstillingen nedenfor, og regeltjekket gælder det. Vælg et andet forslag for at
-                            skifte, eller ret enkelte pladser i opstillingen.
-                          </p>
+                          <div className="stack" style={{ gap: '0.4rem', alignItems: 'flex-end' }}>
+                            <p className="note" style={{ maxWidth: '34ch', textAlign: 'right' }}>
+                              Forslaget er sat ind som holdets opstilling, og regeltjekket nedenfor gælder det.
+                            </p>
+                            <button type="button" className="btn btn-sm" onClick={() => setView('tjek')}>
+                              Ret opstillingen i hånden →
+                            </button>
+                          </div>
                         </div>
                         <div className="table-wrap">
                           <table className="table table-compact">
@@ -482,6 +505,24 @@ export function LineupPage() {
                 )}
               </Card>
 
+              <Card title="Regeltjek" subtitle={`${issues.filter((i) => i.severity === 'error').length} fejl · ${issues.filter((i) => i.severity === 'warning').length} advarsler`}>
+                {issues.length === 0 ? (
+                  <p className="text-2">Ingen problemer fundet.</p>
+                ) : (
+                  <ul className="issue-list">
+                    {issues.map((issue, i) => (
+                      <li key={i} className={`issue issue-${issue.severity}`}>
+                        <span className="issue-rule">{issue.rule}</span>
+                        <span>{issue.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+
+                </>
+              ) : (
+                <>
               <Card title="Opstilling" subtitle="Rækkefølgen følger det officielle holdskema. Point i parentes er for den pågældende rangliste.">
                 {(['MD', 'DS', 'HS', 'DD', 'HD'] as const).map((category) => (
                   <div className="lineup-category" key={category}>
@@ -541,6 +582,8 @@ export function LineupPage() {
                 )}
               </Card>
 
+                </>
+              )}
             </div>
 
             <div className="stack">
@@ -671,6 +714,16 @@ export function LineupPage() {
                 </Card>
               )}
 
+              {view === 'optimer' && (
+                <Card title="Sådan findes opstillingen">
+                  <ul className="note-list">
+                    <li>Modstanderen antages at stille som i sin seneste kamp. Kender du deres opstilling, kan du sammenligne under Tjek en opstilling.</li>
+                    <li>Hver spillers styrke pr. disciplin bygger på alle ligakampe i data. Spillere sættes i de discipliner, de normalt spiller.</li>
+                    <li>Kun lovlige opstillinger foreslås, og forslaget tjekkes efter de samme regler som en opstilling sat i hånden.</li>
+                    <li>Tre forslag vises; forskellene er som regel små bytninger i doublerne.</li>
+                  </ul>
+                </Card>
+              )}
               <Card title="Sådan tjekkes der">
                 <ul className="note-list">
                   <li>Point er den aktuelle rangliste på badmintonplayer.dk. Reglementet bruger månedens første offentliggjorte liste fra den 10. i måneden, så tallene kan afvige få dage om måneden.</li>
