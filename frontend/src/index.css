@@ -1359,6 +1359,33 @@ p {
   }
 }
 
+.ranking-notice {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  font-size: 0.88rem;
+}
+
+.ranking-notice.compact {
+  padding: 0.55rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+.ranking-notice-label {
+  color: var(--text-3);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ranking-notice .muted {
+  font-size: 0.8rem;
+}
+
 /* ---------- versus picker ---------- */
 
 .versus-picker {

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { usePlayer, usePlayerRanking } from '../api'
 import { TrendChart, WinLossBars } from '../components/charts'
+import { RankingListNotice } from '../components/RankingListNotice'
 import { SeasonPicker } from '../components/SeasonPicker'
 import {
   Card,
@@ -189,10 +190,9 @@ export function PlayerPage() {
                               ))}
                             </tbody>
                           </table>
-                          <p className="note" style={{ marginTop: '0.5rem' }}>
-                            Ranglistepoint for {seasonLabel(ranking.data.currentSeasonId)}. Ranglisterne opgøres kun for
-                            den igangværende sæson.
-                          </p>
+                          <div style={{ marginTop: '0.6rem' }}>
+                            <RankingListNotice status={ranking.data.rankingList} compact />
+                          </div>
                         </div>
                       ) : (
                         <p className="note">Ingen ranglistepoint i den igangværende sæson.</p>

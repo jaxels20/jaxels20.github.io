@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { optimiseLineup, useLineupPoints, useLineupSetup, useResolveEntity } from '../api'
+import { RankingListNotice } from '../components/RankingListNotice'
 import { SearchBox } from '../components/SearchBox'
 import { Card, EmptyState, ErrorState, PageSkeleton, PlayerLink, TeamLink } from '../components/ui'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -312,6 +313,12 @@ export function LineupPage() {
               <span>Mod en bestemt modstander, ud fra tidligere kampe</span>
             </button>
           </div>
+
+          {points.data ? (
+            <RankingListNotice status={points.data.rankingList} />
+          ) : (
+            <div className="ranking-notice muted">Henter ranglistepoint og ranglistens dato fra badmintonplayer.dk…</div>
+          )}
 
           <section className={`lineup-verdict lineup-verdict-${status}`} aria-live="polite">
             <div>
@@ -726,7 +733,7 @@ export function LineupPage() {
               )}
               <Card title="Sådan tjekkes der">
                 <ul className="note-list">
-                  <li>Point er den aktuelle rangliste på badmintonplayer.dk. Reglementet bruger månedens første offentliggjorte liste fra den 10. i måneden, så tallene kan afvige få dage om måneden.</li>
+                  <li>Point er den seneste rangliste på badmintonplayer.dk; datoen og den gældende månedsliste står øverst på siden.</li>
                   <li>Singler skal stå i pointrækkefølge med højst 50 points spillerum; doubler efter parrets samlede point med højst 100 (§ 38 stk. 2 og 3).</li>
                   <li>Spillere på et lavere hold skal i mindst én af de kategorier, det højere holds spillere af samme køn spiller, ligge under eller højst 50 point over (§ 38 stk. 4).</li>
                   <li>U17/U19-spillere genkendes på ranglisten og markeres. Reglementet kræver, at de placeres efter vurderet styrke i seniorregi, ikke point (§ 38 stk. 5), så sammenligninger hvor de indgår vises som advarsler til klubbens egen vurdering.</li>

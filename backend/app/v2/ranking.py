@@ -24,12 +24,14 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from ..settings import Settings
-from .common import NotFound, individual_cursor, rows
+from .common import NotFound, cached, individual_cursor, rows
 from .players import resolve_player
 
 BASE_URL = "https://badmintonplayer.dk"
 PROFILE_PAGE = f"{BASE_URL}/DBF/Spiller/VisSpiller/"
 PROFILE_SERVICE = f"{BASE_URL}/SportsResults/Components/WebService1.asmx/GetPlayerProfile"
+VERSIONS_SERVICE = f"{BASE_URL}/SportsResults/Components/WebService1.asmx/GetRankingListVersions"
+SINGLE_LIST_ID = 288  # any list works; the versions are shared
 USER_AGENT = "Mozilla/5.0 (compatible; badmintonintelligence.dk/1.0; +https://badmintonintelligence.dk)"
 TIMEOUT = 20
 
@@ -162,4 +164,73 @@ def player_ranking(settings: Settings, slug: str) -> dict[str, Any]:
         "currentSeasonId": current["seasonId"] if current else None,
         "lists": current["lists"] if current else [],
         "levels": [{"seasonId": s["seasonId"], "level": s["level"]} for s in snapshots if s["level"] is not None],
+        "rankingList": ranking_list_status(),
     }
+
+
+# --- which ranking list is in force -----------------------------------------
+
+MONTHS_DA = ["januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"]
+
+
+def _parse_version_date(text: str) -> dt.date | None:
+    m = re.match(r"^(\d{2})-(\d{2})-(\d{4})", text)
+    return dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1))) if m else None
+
+
+def _valid_window(published: dt.date) -> tuple[dt.date, dt.date]:
+    """§38 stk. 1 a: the first list published in a month applies from the 10th of that
+    month up to and including the 9th of the next."""
+    start = published.replace(day=10)
+    nxt = (published.replace(day=1) + dt.timedelta(days=32)).replace(day=9)
+    return start, nxt
+
+
+def ranking_list_status() -> dict[str, Any]:
+    """The date of the latest daily ranking update (which the points on this site use)
+    and the monthly list the regulation applies today. Cached for six hours."""
+
+    def build() -> dict[str, Any]:
+        key = _callback_key()
+        body = json.dumps({"callbackcontextkey": key, "rankinglistagegroupid": None, "rankinglistid": SINGLE_LIST_ID,
+                           "seasonid": current_season()}).encode("utf-8")
+        request = urllib.request.Request(
+            VERSIONS_SERVICE, data=body,
+            headers={"Content-Type": "application/json; charset=utf-8", "User-Agent": USER_AGENT},
+        )
+        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:  # noqa: S310
+            versions = json.loads(response.read().decode("utf-8", errors="replace"))["d"].get("Versions") or []
+
+        dated = []
+        for v in versions:
+            date = _parse_version_date(v.get("Text") or "")
+            if date:
+                dated.append((date, (v.get("Text") or "")[11:].strip()))
+        dated.sort(reverse=True)
+        monthly = [(date, name) for date, name in dated if name]
+        today = dt.date.today()
+
+        def describe(date: dt.date, name: str) -> dict[str, Any]:
+            start, end = _valid_window(date)
+            return {"name": name, "published": date.isoformat(), "validFrom": start.isoformat(), "validTo": end.isoformat()}
+
+        applicable = next((describe(d, n) for d, n in monthly if _valid_window(d)[0] <= today <= _valid_window(d)[1]), None)
+        upcoming = next((describe(d, n) for d, n in sorted(monthly) if _valid_window(d)[0] > today), None)
+        if applicable is None and monthly:
+            # Before the 10th at the start of a season the previous month's list, from the
+            # old season, is the one in force; name it even though its points are not here.
+            prev = today.replace(day=1) - dt.timedelta(days=1)
+            applicable = {"name": f"{MONTHS_DA[prev.month - 1].capitalize()}-ranglisten", "published": None,
+                          "validFrom": prev.replace(day=10).isoformat(), "validTo": today.replace(day=9).isoformat()
+                          if today.day <= 9 else None}
+        return {
+            "latestUpdate": dated[0][0].isoformat() if dated else None,
+            "applicable": applicable,
+            "upcoming": upcoming,
+            "checkedAt": today.isoformat(),
+        }
+
+    try:
+        return cached("ranking-list-status", build, ttl=6 * 3600)
+    except Exception:  # noqa: BLE001 - purely informational; never block the caller
+        return {"latestUpdate": None, "applicable": None, "upcoming": None, "checkedAt": dt.date.today().isoformat()}

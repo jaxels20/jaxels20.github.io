@@ -14,7 +14,7 @@ from typing import Any
 
 from ..settings import Settings
 from .common import cached, entity, individual_cursor, one, player_entity, rows
-from .ranking import SourceUnavailable, _season_snapshot, current_season
+from .ranking import SourceUnavailable, _season_snapshot, current_season, ranking_list_status
 from .teams import resolve_team
 
 # §37: Badmintonligaen and 1. division play 9 matches, everything below plays 13.
@@ -253,4 +253,4 @@ def lineup_points(player_ids: list[int]) -> dict[str, Any]:
             results = list(pool.map(_points_one, ids))
     except Exception as exc:  # noqa: BLE001 - any failure talking to the source
         raise SourceUnavailable(str(exc)) from exc
-    return {"seasonId": current_season(), "points": {str(r["id"]): r for r in results}}
+    return {"seasonId": current_season(), "points": {str(r["id"]): r for r in results}, "rankingList": ranking_list_status()}

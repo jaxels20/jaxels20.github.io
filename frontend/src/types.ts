@@ -506,6 +506,7 @@ export type PlayerRanking = {
   currentSeasonId: number | null
   lists: RankingList[]
   levels: { seasonId: number; level: number }[]
+  rankingList: RankingListStatus
 }
 
 export type LineupFormat = {
@@ -545,7 +546,19 @@ export type LineupSetup = {
   otherTeams: Entity[]
 }
 
+export type RankingListVersion = { name: string; published: string | null; validFrom: string; validTo: string | null }
+
+export type RankingListStatus = {
+  /** Date of the latest daily update, which is what the points on the site come from. */
+  latestUpdate: string | null
+  /** Monthly list the regulation applies today (§38 stk. 1 a). */
+  applicable: RankingListVersion | null
+  upcoming: RankingListVersion | null
+  checkedAt: string
+}
+
 export type LineupPoints = {
+  rankingList: RankingListStatus
   seasonId: number
   points: Record<
     string,
