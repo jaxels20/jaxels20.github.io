@@ -493,6 +493,11 @@ export function LineupPage() {
                                           {o.rating}
                                           {o.matches < 5 ? '?' : ''}
                                         </span>
+                                        {o.unusual && (
+                                          <span className="chip" style={{ marginLeft: 4 }} title="Spiller normalt ikke denne disciplin ifølge kampdata">
+                                            ny disciplin
+                                          </span>
+                                        )}
                                       </span>
                                     ))}
                                   </td>
@@ -527,7 +532,9 @@ export function LineupPage() {
                         <p className="note">
                           Tallet efter navnet er styrken i netop den disciplin, og ? betyder under 5 ligakampe i den disciplin i data;
                           spilleren kan sagtens have mange kampe i andre discipliner, som styrken så læner sig op ad. Hold musen over
-                          tallet for antallet. Sejrschancen er beregnet ud fra styrkeforskellen, og modstanderens opstilling er et gæt.
+                          tallet for antallet. Spillere sættes i de discipliner, de normalt spiller; "ny disciplin" markerer, at
+                          forslaget flytter en spiller til noget uvant, fordi det tydeligt giver flere sejre. Sejrschancen er beregnet
+                          ud fra styrkeforskellen, og modstanderens opstilling er et gæt.
                         </p>
                       </>
                     )}

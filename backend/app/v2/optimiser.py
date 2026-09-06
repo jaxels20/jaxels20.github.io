@@ -25,6 +25,10 @@ RATING_KEY = {"HS": "single", "DS": "single", "S": "single", "HD": "double", "DD
 PRIOR_BY_TIER = {1: 1800, 2: 1700, 3: 1600, 4: 1500, 5: 1400}
 DEFAULT_PRIOR = 1450
 MAX_PER_PLAYER = 2
+# Expected wins given up before placing a player in a discipline they do not normally play.
+UNUSUAL_PENALTY = 0.25
+USUAL_RECENT_MIN = 3   # matches in the last two seasons
+USUAL_TOTAL_MIN = 5    # or matches ever
 
 
 def expected(rating_a: float, rating_b: float) -> float:
@@ -126,7 +130,7 @@ def _order(units: list[dict[str, Any]], opp_strength: list[float], tolerance: in
     ordered = sorted(units, key=lambda u: -u["points"])
 
     def total(seq: list[dict[str, Any]]) -> float:
-        return sum(expected(u["rating"], opp_strength[i]) for i, u in enumerate(seq))
+        return sum(expected(u["rating"], opp_strength[i]) - u.get("penalty", 0.0) for i, u in enumerate(seq))
 
     best = total(ordered)
     improved = True
@@ -196,6 +200,30 @@ def optimise(
         players = rows(cur)
         sexes = _sex_map(cur, [p["player_key"] for p in players])
 
+        # Which disciplines each player normally plays, from the last two seasons.
+        cur.execute("SELECT max(season_id) AS latest FROM dim_season")
+        latest_season = (cur.fetchone() or {}).get("latest") or 0
+        cur.execute(
+            """
+            SELECT p.player_id, d.discipline_code,
+                   count(*) FILTER (WHERE s.season_id >= %(recent)s) AS recent, count(*) AS total
+            FROM bridge_individual_match_player b
+            JOIN dim_player p ON p.player_key = b.player_key
+            JOIN fact_individual_match f ON f.individual_match_key = b.individual_match_key
+            JOIN dim_season s ON s.season_key = f.season_key
+            JOIN dim_discipline d ON d.discipline_key = f.discipline_key
+            WHERE p.player_id = ANY(%(ids)s)
+            GROUP BY 1, 2
+            """,
+            {"ids": [int(i) for i in available], "recent": latest_season - 1},
+        )
+        usual: dict[int, set[str]] = {}
+        played_any: set[int] = set()
+        for r in rows(cur):
+            played_any.add(r["player_id"])
+            if r["recent"] >= USUAL_RECENT_MIN or r["total"] >= USUAL_TOTAL_MIN:
+                usual.setdefault(r["player_id"], set()).add(r["discipline_code"])
+
         opp_lineup = _latest_lineup(cur, opponent["team_key"])
         opp_keys = [p["playerKey"] for p in (opp_lineup or {}).get("players", [])]
         opp_sex = _sex_map(cur, opp_keys)
@@ -261,6 +289,8 @@ def optimise(
             "youth": youth(pid),
             "points": {k: pts(pid, k) for k in ("single", "double", "mix")},
             "ratings": {k: _rating(ratings, pid, k) for k in ("single", "double", "mix")},
+            # No league history at all: nothing is unusual yet. Otherwise only familiar disciplines.
+            "usual": None if pid not in played_any else usual.get(pid, set()),
         }
         (men if sex == "M" else women).append(item)
 
@@ -307,39 +337,47 @@ def optimise(
 
     by_id = {p["id"]: p for p in men + women}
 
-    def unit_single(pid: int) -> dict[str, Any]:
-        p = by_id[pid]
-        return {"ids": [pid], "points": p["points"]["single"], "rating": p["ratings"]["single"][0]}
+    def unusual(pid: int, category: str) -> bool:
+        u = by_id[pid]["usual"]
+        return u is not None and category not in u
 
-    def unit_pair(a: int, b: int, key: str) -> dict[str, Any]:
+    def unit_single(pid: int, category: str) -> dict[str, Any]:
+        p = by_id[pid]
+        odd = [pid] if unusual(pid, category) else []
+        return {"ids": [pid], "points": p["points"]["single"], "rating": p["ratings"]["single"][0],
+                "penalty": UNUSUAL_PENALTY * len(odd), "unusual": odd}
+
+    def unit_pair(a: int, b: int, key: str, category: str) -> dict[str, Any]:
         pa, pb = by_id[a], by_id[b]
+        odd = [pid for pid in (a, b) if unusual(pid, category)]
         return {"ids": [a, b], "points": pa["points"][key] + pb["points"][key],
-                "rating": (pa["ratings"][key][0] + pb["ratings"][key][0]) / 2}
+                "rating": (pa["ratings"][key][0] + pb["ratings"][key][0]) / 2,
+                "penalty": UNUSUAL_PENALTY * len(odd), "unusual": odd}
 
     # Precompute singles sets and doubles pairings per sex, each with its ordered value.
-    def singles_options(pool: list[int], n: int, opp: list[float]) -> list[tuple[float, tuple[int, ...], list]]:
+    def singles_options(pool: list[int], n: int, opp: list[float], category: str) -> list[tuple[float, tuple[int, ...], list]]:
         out = []
         for combo in combinations(pool, n):
-            value, ordered = _order([unit_single(pid) for pid in combo], opp, 50)
+            value, ordered = _order([unit_single(pid, category) for pid in combo], opp, 50)
             out.append((value, combo, ordered))
         out.sort(key=lambda x: -x[0])
         return out
 
-    def doubles_options(pool: list[int], n_pairs: int, key: str, opp: list[float]) -> list[tuple[float, tuple[int, ...], list]]:
+    def doubles_options(pool: list[int], n_pairs: int, key: str, opp: list[float], category: str) -> list[tuple[float, tuple[int, ...], list]]:
         out = []
         for subset in combinations(pool, 2 * n_pairs):
             for pairing in _pairings(subset):
-                value, ordered = _order([unit_pair(a, b, key) for a, b in pairing], opp, 100)
+                value, ordered = _order([unit_pair(a, b, key, category) for a, b in pairing], opp, 100)
                 out.append((value, subset, ordered))
         out.sort(key=lambda x: -x[0])
         return out
 
     men_ids = [p["id"] for p in men]
     women_ids = [p["id"] for p in women]
-    hs_opts = singles_options(men_ids, counts["HS"], opp_hs)
-    ds_opts = singles_options(women_ids, counts["DS"], opp_ds)
-    hd_opts = doubles_options(men_ids, counts["HD"], "double", opp_hd)
-    dd_opts = doubles_options(women_ids, counts["DD"], "double", opp_dd)
+    hs_opts = singles_options(men_ids, counts["HS"], opp_hs, "HS")
+    ds_opts = singles_options(women_ids, counts["DS"], opp_ds, "DS")
+    hd_opts = doubles_options(men_ids, counts["HD"], "double", opp_hd, "HD")
+    dd_opts = doubles_options(women_ids, counts["DD"], "double", opp_dd, "DD")
 
     def best_rest(md_set: tuple[int, ...], pool: list[int], d_opts, s_opts, min_distinct: int):
         """Best doubles + singles given the players already used in mixed (cap 2 each)."""
@@ -377,7 +415,7 @@ def optimise(
                 continue
             best_md = None
             for perm in ([(md_men[0], md_women[0]), (md_men[1], md_women[1])], [(md_men[0], md_women[1]), (md_men[1], md_women[0])]):
-                value, ordered = _order([unit_pair(m, w, "mix") for m, w in perm], opp_md, 100)
+                value, ordered = _order([unit_pair(m, w, "mix", "MD") for m, w in perm], opp_md, 100)
                 if best_md is None or value > best_md[0]:
                     best_md = (value, ordered)
             total = rest_men[0] + rest_women[0] + best_md[0]
@@ -390,17 +428,20 @@ def optimise(
     def describe(cand: dict[str, Any]) -> dict[str, Any]:
         slots = {}
         details = []
+        wins = 0.0
         for category in ("MD", "DS", "HS", "DD", "HD"):
             key = RATING_KEY[category]
             for i, unit in enumerate(cand[category], start=1):
                 slot = f"{category}{i}"
                 strength, ops = opp_strength(slot, key)
                 p_win = expected(unit["rating"], strength)
+                wins += p_win
                 slots[slot] = unit["ids"]
                 details.append({
                     "slot": f"{i}. {category}",
                     "ours": [{**player_entity(by_id[pid]["name"], pid), "rating": round(by_id[pid]["ratings"][key][0]),
-                              "matches": by_id[pid]["ratings"][key][1], "youth": by_id[pid]["youth"]} for pid in unit["ids"]],
+                              "matches": by_id[pid]["ratings"][key][1], "youth": by_id[pid]["youth"],
+                              "unusual": pid in unit.get("unusual", [])} for pid in unit["ids"]],
                     "ourRating": round(unit["rating"]),
                     "ourPoints": unit["points"],
                     "theirs": [{**player_entity(op["name"], op["id"]), "rating": round(_rating(ratings, op["id"], key)[0]),
@@ -408,7 +449,7 @@ def optimise(
                     "theirRating": round(strength),
                     "pWin": round(p_win, 3),
                 })
-        return {"expectedWins": round(cand["total"], 2), "slots": slots, "details": details}
+        return {"expectedWins": round(wins, 2), "slots": slots, "details": details}
 
     top = []
     seen = set()
@@ -444,5 +485,5 @@ def optimise(
         "candidates": top,
         "excluded": excluded,
         "notes": notes,
-        "model": "Elo pr. spiller og disciplin fra alle ligakampe i data; par tæller som gennemsnittet. Discipliner med få kampe læner sig op ad spillerens øvrige discipliner. 1500 er en gennemsnitlig Danmarksserie-spiller.",
+        "model": "Elo pr. spiller og disciplin fra alle ligakampe i data; par tæller som gennemsnittet. Discipliner med få kampe læner sig op ad spillerens øvrige discipliner. Spillere sættes i de discipliner, de normalt spiller, medmindre et skift tydeligt giver flere sejre. 1500 er en gennemsnitlig Danmarksserie-spiller.",
     }
