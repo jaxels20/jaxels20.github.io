@@ -136,14 +136,15 @@ function AllTimeTeamRow({ t, onSeason }: { t: ClubTeamAllTime; onSeason: (season
 
 export function ClubPage() {
   const { slug } = useParams()
-  const { season, setSeason, resolved, explicit } = useSeasonParam('latest')
+  // Clubs open across all seasons; a season in the link narrows the view.
+  const { season, setSeason, resolved, explicit } = useSeasonParam('all')
   const { data, error, isLoading } = useClub(resolved ? slug : undefined, season)
   const [playerScope, setPlayerScope] = useState<'season' | 'all'>('season')
   const [showAllPlayers, setShowAllPlayers] = useState(false)
   const [showAllMatches, setShowAllMatches] = useState(false)
   usePageTitle(data ? `${data.club.name} · Klub` : null)
 
-  // Without an explicit season in the link, follow the latest season the club actually played.
+  // A season the club did not play in is answered with its latest season; follow it in the link.
   useEffect(() => {
     if (!data || explicit || season === null || data.seasonId === null) return
     if (data.seasonId !== season) setSeason(data.seasonId, true)

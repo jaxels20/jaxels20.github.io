@@ -62,7 +62,7 @@ export function ClubsPage() {
                 {clubs.map((c) => (
                   <tr key={c.club.slug}>
                     <td className="primary">
-                      <Link className="link" to={`/klubber/${c.club.slug}`}>
+                      <Link className="link" to={season === null ? `/klubber/${c.club.slug}` : `/klubber/${c.club.slug}?saeson=${season}`}>
                         {c.club.name}
                       </Link>
                     </td>
