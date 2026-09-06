@@ -52,6 +52,8 @@ CREATE TABLE stg_individual_matches (
     away_team text,
     home_players text,
     away_players text,
+    home_player_ids text,
+    away_player_ids text,
     set_scores text,
     winner_side text,
     winner_team text,
@@ -146,9 +148,12 @@ CREATE TABLE dim_discipline (
 
 CREATE TABLE dim_player (
     player_key bigserial PRIMARY KEY,
-    player_name text NOT NULL UNIQUE,
+    player_id integer,
+    player_name text NOT NULL,
     is_placeholder boolean NOT NULL DEFAULT false
 );
+CREATE UNIQUE INDEX ux_dim_player_player_id ON dim_player(player_id) WHERE player_id IS NOT NULL;
+CREATE UNIQUE INDEX ux_dim_player_name_without_id ON dim_player(player_name) WHERE player_id IS NULL;
 
 CREATE TABLE fact_individual_match (
     individual_match_key bigserial PRIMARY KEY,
@@ -326,21 +331,45 @@ FROM stg_individual_matches
 WHERE nullif(trim(discipline_no), '') IS NOT NULL
   AND nullif(trim(discipline_code), '') IS NOT NULL;
 
-WITH player_source AS (
-    SELECT trim(player_name) AS player_name
+CREATE TEMP TABLE tmp_player_source AS
+SELECT DISTINCT player_name, player_id
+FROM (
+    SELECT trim(n.player_name) AS player_name,
+           CASE WHEN trim(x.player_id) ~ '^\d+$' THEN trim(x.player_id)::integer END AS player_id
     FROM stg_individual_matches i
-    CROSS JOIN LATERAL regexp_split_to_table(coalesce(i.home_players, ''), '\s*,\s*') AS player_name
+    CROSS JOIN LATERAL regexp_split_to_table(coalesce(i.home_players, ''), '\s*,\s*') WITH ORDINALITY AS n(player_name, ord)
+    LEFT JOIN LATERAL regexp_split_to_table(coalesce(i.home_player_ids, ''), '\s*,\s*') WITH ORDINALITY AS x(player_id, ord) ON x.ord = n.ord
     UNION
-    SELECT trim(player_name) AS player_name
+    SELECT trim(n.player_name) AS player_name,
+           CASE WHEN trim(x.player_id) ~ '^\d+$' THEN trim(x.player_id)::integer END AS player_id
     FROM stg_individual_matches i
-    CROSS JOIN LATERAL regexp_split_to_table(coalesce(i.away_players, ''), '\s*,\s*') AS player_name
-)
-INSERT INTO dim_player (player_name, is_placeholder)
-SELECT DISTINCT
+    CROSS JOIN LATERAL regexp_split_to_table(coalesce(i.away_players, ''), '\s*,\s*') WITH ORDINALITY AS n(player_name, ord)
+    LEFT JOIN LATERAL regexp_split_to_table(coalesce(i.away_player_ids, ''), '\s*,\s*') WITH ORDINALITY AS x(player_id, ord) ON x.ord = n.ord
+) src
+WHERE player_name <> '';
+
+-- Players with a badmintonplayer.dk id: one row per id, latest spelling of the name wins.
+INSERT INTO dim_player (player_id, player_name, is_placeholder)
+SELECT DISTINCT ON (player_id)
+    player_id,
     player_name,
     lower(player_name) LIKE '(ikke fremm%dt)%' AS is_placeholder
-FROM player_source
-WHERE player_name <> '';
+FROM tmp_player_source
+WHERE player_id IS NOT NULL
+ORDER BY player_id, player_name
+ON CONFLICT (player_id) WHERE player_id IS NOT NULL DO UPDATE
+SET player_name = EXCLUDED.player_name;
+
+-- Players without an id (placeholders such as "(Ikke fremmødt)"): keyed by name.
+INSERT INTO dim_player (player_id, player_name, is_placeholder)
+SELECT NULL, player_name, bool_or(lower(player_name) LIKE '(ikke fremm%dt)%' OR lower(player_name) LIKE '(ukendt%')
+FROM tmp_player_source
+WHERE player_id IS NULL
+GROUP BY player_name
+ON CONFLICT (player_name) WHERE player_id IS NULL DO UPDATE
+SET is_placeholder = dim_player.is_placeholder OR EXCLUDED.is_placeholder;
+
+DROP TABLE tmp_player_source;
 
 WITH scored_sets AS (
     SELECT
@@ -465,10 +494,12 @@ WITH source_players AS (
         i.discipline_no::smallint AS discipline_no,
         trim(i.discipline_code) AS discipline_code,
         'H'::char(1) AS side_code,
-        p.ordinality::smallint AS player_slot,
-        trim(p.player_name) AS player_name
+        n.ord::smallint AS player_slot,
+        trim(n.player_name) AS player_name,
+        CASE WHEN trim(x.player_id) ~ '^\d+$' THEN trim(x.player_id)::integer END AS player_id
     FROM stg_individual_matches i
-    CROSS JOIN LATERAL regexp_split_to_table(coalesce(i.home_players, ''), '\s*,\s*') WITH ORDINALITY AS p(player_name, ordinality)
+    CROSS JOIN LATERAL regexp_split_to_table(coalesce(i.home_players, ''), '\s*,\s*') WITH ORDINALITY AS n(player_name, ord)
+    LEFT JOIN LATERAL regexp_split_to_table(coalesce(i.home_player_ids, ''), '\s*,\s*') WITH ORDINALITY AS x(player_id, ord) ON x.ord = n.ord
     UNION ALL
     SELECT
         i.season_id::integer AS season_id,
@@ -477,10 +508,12 @@ WITH source_players AS (
         i.discipline_no::smallint AS discipline_no,
         trim(i.discipline_code) AS discipline_code,
         'A'::char(1) AS side_code,
-        p.ordinality::smallint AS player_slot,
-        trim(p.player_name) AS player_name
+        n.ord::smallint AS player_slot,
+        trim(n.player_name) AS player_name,
+        CASE WHEN trim(x.player_id) ~ '^\d+$' THEN trim(x.player_id)::integer END AS player_id
     FROM stg_individual_matches i
-    CROSS JOIN LATERAL regexp_split_to_table(coalesce(i.away_players, ''), '\s*,\s*') WITH ORDINALITY AS p(player_name, ordinality)
+    CROSS JOIN LATERAL regexp_split_to_table(coalesce(i.away_players, ''), '\s*,\s*') WITH ORDINALITY AS n(player_name, ord)
+    LEFT JOIN LATERAL regexp_split_to_table(coalesce(i.away_player_ids, ''), '\s*,\s*') WITH ORDINALITY AS x(player_id, ord) ON x.ord = n.ord
 )
 INSERT INTO bridge_individual_match_player (
     individual_match_key,
@@ -508,7 +541,8 @@ JOIN fact_individual_match f
    AND f.match_id = sp.match_id
    AND f.discipline_key = dd.discipline_key
 JOIN dim_player dp
-    ON dp.player_name = sp.player_name
+    ON (sp.player_id IS NOT NULL AND dp.player_id = sp.player_id)
+    OR (sp.player_id IS NULL AND dp.player_id IS NULL AND dp.player_name = sp.player_name)
 WHERE sp.player_name <> '';
 
 CREATE INDEX ix_fact_individual_match_season_key ON fact_individual_match(season_key);

@@ -213,6 +213,8 @@ def write_individual_matches_csv(path: Path, matches: list[dict[str, Any]]) -> N
         "away_team",
         "home_players",
         "away_players",
+        "home_player_ids",
+        "away_player_ids",
         "set_scores",
         "winner_side",
         "winner_team",
@@ -228,6 +230,12 @@ def write_individual_matches_csv(path: Path, matches: list[dict[str, Any]]) -> N
                 )
                 away_players = ", ".join(
                     p["name"] for p in game.get("away_players", [])
+                )
+                home_player_ids = ", ".join(
+                    str(p.get("player_id") or "") for p in game.get("home_players", [])
+                )
+                away_player_ids = ", ".join(
+                    str(p.get("player_id") or "") for p in game.get("away_players", [])
                 )
                 set_scores = ", ".join(
                     s["score"] for s in game.get("sets", []) if s.get("score")
@@ -250,6 +258,8 @@ def write_individual_matches_csv(path: Path, matches: list[dict[str, Any]]) -> N
                         "away_team": game.get("away_team"),
                         "home_players": home_players,
                         "away_players": away_players,
+                        "home_player_ids": home_player_ids,
+                        "away_player_ids": away_player_ids,
                         "set_scores": set_scores,
                         "winner_side": game.get("winner_side"),
                         "winner_team": game.get("winner_team"),

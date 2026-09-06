@@ -78,6 +78,8 @@ CREATE TEMP TABLE stg_individual_matches (
     away_team text,
     home_players text,
     away_players text,
+    home_player_ids text,
+    away_player_ids text,
     set_scores text,
     winner_side text,
     winner_team text,

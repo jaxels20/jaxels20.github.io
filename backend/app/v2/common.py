@@ -130,6 +130,24 @@ def entity(name: str) -> dict[str, str]:
     return {"name": name, "slug": slugify(name)}
 
 
+def player_entity(name: str, player_id: int | None) -> dict[str, Any]:
+    """Players are identified by their badmintonplayer.dk id; the slug embeds it so
+    two people with the same name never share a URL. Placeholders have no id."""
+    slug = f"{slugify(name)}-{player_id}" if player_id else slugify(name)
+    return {"name": name, "slug": slug, "id": player_id}
+
+
+def player_entities(items: Any) -> list[dict[str, Any]]:
+    """Convert a json_agg of {name, id, placeholder?} rows into entities."""
+    return [
+        {**player_entity(p["name"], p.get("id")), **({"placeholder": p["placeholder"]} if "placeholder" in p else {})}
+        for p in (items or [])
+    ]
+
+
+PLAYER_JSON = "json_build_object('name', {p}.player_name, 'id', {p}.player_id)"
+
+
 # --- tiny TTL cache ------------------------------------------------------
 
 _CACHE: dict[str, tuple[float, Any]] = {}

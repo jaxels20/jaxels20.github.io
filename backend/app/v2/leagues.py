@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..settings import Settings
-from .common import NotFound, discipline_sort_key, entity, individual_cursor, match_type_label, one, pct, rows, team_cursor
+from .common import NotFound, discipline_sort_key, entity, individual_cursor, match_type_label, one, pct, player_entities, rows, team_cursor
 
 DIVISION_TIER = {
     "Badmintonligaen": 1,
@@ -229,10 +229,10 @@ def match_detail(settings: Settings, season: int, group_id: int, match_id: int) 
             SELECT d.discipline_code, d.discipline_no, d.discipline_label, f.winner_side,
                    f.home_sets_won, f.away_sets_won, f.sets_played, f.home_points_scored, f.away_points_scored,
                    f.is_walkover, f.walkover_code, f.set_scores_raw,
-                   (SELECT json_agg(json_build_object('name', p.player_name, 'placeholder', p.is_placeholder) ORDER BY b.player_slot)
+                   (SELECT json_agg(json_build_object('name', p.player_name, 'id', p.player_id, 'placeholder', p.is_placeholder) ORDER BY b.player_slot)
                       FROM bridge_individual_match_player b JOIN dim_player p ON p.player_key = b.player_key
                      WHERE b.individual_match_key = f.individual_match_key AND b.side_code = 'H') AS home_players,
-                   (SELECT json_agg(json_build_object('name', p.player_name, 'placeholder', p.is_placeholder) ORDER BY b.player_slot)
+                   (SELECT json_agg(json_build_object('name', p.player_name, 'id', p.player_id, 'placeholder', p.is_placeholder) ORDER BY b.player_slot)
                       FROM bridge_individual_match_player b JOIN dim_player p ON p.player_key = b.player_key
                      WHERE b.individual_match_key = f.individual_match_key AND b.side_code = 'A') AS away_players
             FROM fact_individual_match f
@@ -250,12 +250,8 @@ def match_detail(settings: Settings, season: int, group_id: int, match_id: int) 
                     "matchType": match_type_label(r["discipline_code"], r["discipline_no"]),
                     "code": r["discipline_code"],
                     "number": r["discipline_no"],
-                    "homePlayers": [
-                        {**entity(p["name"]), "placeholder": p["placeholder"]} for p in (r["home_players"] or [])
-                    ],
-                    "awayPlayers": [
-                        {**entity(p["name"]), "placeholder": p["placeholder"]} for p in (r["away_players"] or [])
-                    ],
+                    "homePlayers": player_entities(r["home_players"]),
+                    "awayPlayers": player_entities(r["away_players"]),
                     "winner": r["winner_side"],
                     "homeSets": r["home_sets_won"],
                     "awaySets": r["away_sets_won"],

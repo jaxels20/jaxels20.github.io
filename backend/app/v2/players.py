@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import psycopg
@@ -13,6 +14,8 @@ from .common import (
     match_type_label,
     one,
     pct,
+    player_entities,
+    player_entity,
     ratio,
     rows,
     slug_sql,
@@ -47,8 +50,25 @@ WITH pm AS (
 
 
 def resolve_player(cur: psycopg.Cursor[Any], slug: str) -> dict[str, Any]:
+    """Slugs look like `thomas-jensen-76094`; the trailing number is the badmintonplayer.dk id.
+    Slugs without an id (old links) fall back to the most active player with that name."""
+    match = re.match(r"^(.*?)-(\d+)$", slug)
+    if match:
+        cur.execute(
+            "SELECT player_key, player_id, player_name FROM dim_player WHERE player_id = %(id)s LIMIT 1",
+            {"id": int(match.group(2))},
+        )
+        row = one(cur)
+        if row:
+            return row
     cur.execute(
-        f"SELECT player_key, player_name FROM dim_player WHERE NOT is_placeholder AND {slug_sql('player_name')} = %(slug)s LIMIT 1",
+        f"""
+        SELECT p.player_key, p.player_id, p.player_name
+        FROM dim_player p
+        WHERE NOT p.is_placeholder AND {slug_sql('p.player_name')} = %(slug)s
+        ORDER BY (SELECT count(*) FROM bridge_individual_match_player b WHERE b.player_key = p.player_key) DESC
+        LIMIT 1
+        """,
         {"slug": slug},
     )
     row = one(cur)
@@ -224,20 +244,20 @@ def player_partners(cur: psycopg.Cursor[Any], params: dict[str, Any]) -> list[di
     cur.execute(
         PLAYER_BASE
         + """
-        SELECT p.player_name, string_agg(DISTINCT pm.discipline_code, ',') AS codes,
+        SELECT p.player_name, p.player_id, string_agg(DISTINCT pm.discipline_code, ',') AS codes,
                count(*) AS played, count(*) FILTER (WHERE pm.won) AS wins
         FROM pm
         JOIN bridge_individual_match_player b2
           ON b2.individual_match_key = pm.individual_match_key AND b2.side_code = pm.side
          AND b2.player_key <> %(player_key)s
         JOIN dim_player p ON p.player_key = b2.player_key AND NOT p.is_placeholder
-        GROUP BY p.player_name ORDER BY played DESC, wins DESC, p.player_name LIMIT 20
+        GROUP BY p.player_key, p.player_name, p.player_id ORDER BY played DESC, wins DESC, p.player_name LIMIT 20
         """,
         params,
     )
     return [
         {
-            "player": entity(r["player_name"]),
+            "player": player_entity(r["player_name"], r["player_id"]),
             "disciplines": sorted((r["codes"] or "").split(","), key=discipline_sort_key),
             "played": r["played"],
             "wins": r["wins"],
@@ -252,18 +272,18 @@ def player_rivals(cur: psycopg.Cursor[Any], params: dict[str, Any]) -> list[dict
     cur.execute(
         PLAYER_BASE
         + """
-        SELECT p.player_name, count(*) AS played, count(*) FILTER (WHERE pm.won) AS wins
+        SELECT p.player_name, p.player_id, count(*) AS played, count(*) FILTER (WHERE pm.won) AS wins
         FROM pm
         JOIN bridge_individual_match_player b2
           ON b2.individual_match_key = pm.individual_match_key AND b2.side_code <> pm.side
         JOIN dim_player p ON p.player_key = b2.player_key AND NOT p.is_placeholder
-        GROUP BY p.player_name ORDER BY played DESC, wins DESC, p.player_name LIMIT 20
+        GROUP BY p.player_key, p.player_name, p.player_id ORDER BY played DESC, wins DESC, p.player_name LIMIT 20
         """,
         params,
     )
     return [
         {
-            "player": entity(r["player_name"]),
+            "player": player_entity(r["player_name"], r["player_id"]),
             "played": r["played"],
             "wins": r["wins"],
             "losses": r["played"] - r["wins"],
@@ -309,13 +329,14 @@ def player_matches(cur: psycopg.Cursor[Any], params: dict[str, Any], limit: int 
                pm.discipline_code, pm.discipline_no, pm.side, pm.won, pm.sets_won, pm.sets_lost,
                pm.points_won, pm.points_lost, pm.sets_played, pm.is_walkover, pm.walkover_code, pm.set_scores_raw,
                t.team_name AS team_name, o.team_name AS opponent_name,
-               (SELECT string_agg(p.player_name, ' / ' ORDER BY b2.player_slot)
+               (SELECT json_agg(json_build_object('name', p.player_name, 'id', p.player_id) ORDER BY b2.player_slot)
                   FROM bridge_individual_match_player b2 JOIN dim_player p ON p.player_key = b2.player_key
                  WHERE b2.individual_match_key = pm.individual_match_key AND b2.side_code = pm.side
                    AND b2.player_key <> %(player_key)s AND NOT p.is_placeholder) AS partner,
-               (SELECT string_agg(p.player_name, ' / ' ORDER BY b2.player_slot)
+               (SELECT json_agg(json_build_object('name', p.player_name, 'id', p.player_id) ORDER BY b2.player_slot)
                   FROM bridge_individual_match_player b2 JOIN dim_player p ON p.player_key = b2.player_key
-                 WHERE b2.individual_match_key = pm.individual_match_key AND b2.side_code <> pm.side) AS opponents
+                 WHERE b2.individual_match_key = pm.individual_match_key AND b2.side_code <> pm.side
+                   AND NOT p.is_placeholder) AS opponents
         FROM pm JOIN dim_team t ON t.team_key = pm.team_key JOIN dim_team o ON o.team_key = pm.opponent_team_key
         ORDER BY pm.match_date DESC, pm.match_id DESC, pm.discipline_no
         LIMIT %(limit)s
@@ -346,8 +367,8 @@ def player_matches(cur: psycopg.Cursor[Any], params: dict[str, Any], limit: int 
                 "home": r["side"] == "H",
                 "team": entity(r["team_name"]),
                 "opponentTeam": entity(r["opponent_name"]),
-                "partner": entity(r["partner"]) if r["partner"] else None,
-                "opponents": [entity(n.strip()) for n in (r["opponents"] or "").split(" / ") if n.strip()],
+                "partner": (player_entities(r["partner"]) or [None])[0],
+                "opponents": player_entities(r["opponents"]),
                 "result": "W" if r["won"] else "L",
                 "setsWon": r["sets_won"],
                 "setsLost": r["sets_lost"],
@@ -385,7 +406,7 @@ def player_profile(settings: Settings, slug: str, season: int | None) -> dict[st
         matches = player_matches(cur, params)
         teams = player_teams(cur, params)
         return {
-            "player": entity(player["player_name"]),
+            "player": player_entity(player["player_name"], player["player_id"]),
             "seasonId": season,
             "seasons": player_seasons(cur, player["player_key"]),
             "currentTeam": teams[0]["team"] if teams else None,

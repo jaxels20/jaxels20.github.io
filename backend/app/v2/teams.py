@@ -14,6 +14,7 @@ from .common import (
     match_type_label,
     one,
     pct,
+    player_entity,
     ratio,
     result_code,
     rows,
@@ -240,7 +241,7 @@ def team_players(cur: psycopg.Cursor[Any], params: dict[str, Any]) -> list[dict[
     cur.execute(
         TEAM_BASE
         + """
-        SELECT p.player_name,
+        SELECT p.player_name, p.player_id,
                count(DISTINCT m.match_id) AS team_matches,
                count(*) AS matches,
                count(*) FILTER (WHERE m.won) AS wins,
@@ -253,7 +254,7 @@ def team_players(cur: psycopg.Cursor[Any], params: dict[str, Any]) -> list[dict[
         JOIN bridge_individual_match_player b
           ON b.individual_match_key = m.individual_match_key AND b.side_code = m.side
         JOIN dim_player p ON p.player_key = b.player_key AND NOT p.is_placeholder
-        GROUP BY p.player_name
+        GROUP BY p.player_key, p.player_name, p.player_id
         ORDER BY team_matches DESC, matches DESC, wins DESC, p.player_name
         LIMIT 60
         """,
@@ -264,7 +265,7 @@ def team_players(cur: psycopg.Cursor[Any], params: dict[str, Any]) -> list[dict[
         codes = sorted((r["codes"] or "").split(","), key=discipline_sort_key)
         out.append(
             {
-                "player": entity(r["player_name"]),
+                "player": player_entity(r["player_name"], r["player_id"]),
                 "teamMatches": r["team_matches"],
                 "matches": r["matches"],
                 "wins": r["wins"],
@@ -283,19 +284,24 @@ def team_pairs(cur: psycopg.Cursor[Any], params: dict[str, Any]) -> list[dict[st
     cur.execute(
         TEAM_BASE
         + """
-        SELECT least(p1.player_name, p2.player_name) AS a,
-               greatest(p1.player_name, p2.player_name) AS b,
-               m.discipline_code,
-               count(*) AS played, count(*) FILTER (WHERE m.won) AS wins
-        FROM m
-        JOIN bridge_individual_match_player b1
-          ON b1.individual_match_key = m.individual_match_key AND b1.side_code = m.side AND b1.player_slot = 1
-        JOIN bridge_individual_match_player b2
-          ON b2.individual_match_key = m.individual_match_key AND b2.side_code = m.side AND b2.player_slot = 2
-        JOIN dim_player p1 ON p1.player_key = b1.player_key AND NOT p1.is_placeholder
-        JOIN dim_player p2 ON p2.player_key = b2.player_key AND NOT p2.is_placeholder
-        WHERE m.discipline_code = ANY(%(doubles)s)
-        GROUP BY 1, 2, 3
+        , pairs AS (
+          SELECT least(b1.player_key, b2.player_key) AS k1, greatest(b1.player_key, b2.player_key) AS k2,
+                 m.discipline_code, count(*) AS played, count(*) FILTER (WHERE m.won) AS wins
+          FROM m
+          JOIN bridge_individual_match_player b1
+            ON b1.individual_match_key = m.individual_match_key AND b1.side_code = m.side AND b1.player_slot = 1
+          JOIN bridge_individual_match_player b2
+            ON b2.individual_match_key = m.individual_match_key AND b2.side_code = m.side AND b2.player_slot = 2
+          JOIN dim_player p1 ON p1.player_key = b1.player_key AND NOT p1.is_placeholder
+          JOIN dim_player p2 ON p2.player_key = b2.player_key AND NOT p2.is_placeholder
+          WHERE m.discipline_code = ANY(%(doubles)s)
+          GROUP BY 1, 2, 3
+        )
+        SELECT pa.player_name AS a, pa.player_id AS a_id, pb.player_name AS b, pb.player_id AS b_id,
+               pairs.discipline_code, pairs.played, pairs.wins
+        FROM pairs
+        JOIN dim_player pa ON pa.player_key = pairs.k1
+        JOIN dim_player pb ON pb.player_key = pairs.k2
         ORDER BY played DESC, wins DESC, a, b
         LIMIT 25
         """,
@@ -303,7 +309,7 @@ def team_pairs(cur: psycopg.Cursor[Any], params: dict[str, Any]) -> list[dict[st
     )
     return [
         {
-            "players": [entity(r["a"]), entity(r["b"])],
+            "players": [player_entity(r["a"], r["a_id"]), player_entity(r["b"], r["b_id"])],
             "code": r["discipline_code"],
             "played": r["played"],
             "wins": r["wins"],

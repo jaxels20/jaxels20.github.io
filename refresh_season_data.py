@@ -62,6 +62,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip collection and use existing season_<year>_all_groups CSVs.",
     )
+    parser.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="Drop and rebuild both warehouses from scratch before loading this year (use after schema changes).",
+    )
     parser.add_argument("--timeout", type=int, default=45)
     parser.add_argument("--delay", type=float, default=0.0)
     parser.add_argument("--retries", type=int, default=4)
@@ -230,7 +235,7 @@ def main() -> int:
     ]
 
     if not args.skip_individual_load:
-        if table_exists(
+        if not args.rebuild and table_exists(
             psql_base,
             db_name="badminton_dw_individual",
             table_name="dw.fact_individual_match",
@@ -268,7 +273,7 @@ def main() -> int:
         print("\n[refresh-individual] skipped", flush=True)
 
     if not args.skip_team_load:
-        if table_exists(
+        if not args.rebuild and table_exists(
             psql_base, db_name="badminton_dw_team", table_name="dw.fact_team_match"
         ):
             refresh_team_cmd = (

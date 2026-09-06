@@ -113,6 +113,8 @@ docker compose --env-file .env run --rm backend \
 
 `--skip-collect` loads the committed CSVs instead of re-downloading from badmintonplayer.dk. Run the same command with a different `--year` for additional seasons.
 
+After a warehouse schema change, add `--rebuild` to the first year's command (it drops and recreates both warehouses), then refresh the remaining years as usual. If the CSV layout changed, regenerate the CSVs from the stored JSON first with `python rebuild_individual_csvs.py`.
+
 ## 5) Configure GitHub Pages deployment
 
 This repository includes `.github/workflows/deploy-pages.yml`.

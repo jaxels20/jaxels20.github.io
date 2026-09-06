@@ -52,7 +52,10 @@ Override the second with `BADMINTON_TEAM_DB_NAME`.
 - `/kampe/:season/:groupId/:matchId` team match detail with every individual match
 - `/toplister` leaderboards (season, division and minimum-matches filters)
 
-Slugs are derived from names: lower-case, `æ/ø/å` -> `ae/oe/aa`, everything else -> `-`.
+Team slugs are derived from names: lower-case, `æ/ø/å` -> `ae/oe/aa`, everything else -> `-`.
+Player slugs add the badmintonplayer.dk player id as a suffix (`thomas-jensen-73557`), because
+several different people can share a name. A player slug without an id resolves to the most active
+player with that name.
 
 ## API endpoints (v2, JSON)
 

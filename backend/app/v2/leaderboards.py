@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..settings import Settings
-from .common import DOUBLES_CODES, SINGLES_CODES, entity, individual_cursor, pct, ratio, rows
+from .common import DOUBLES_CODES, SINGLES_CODES, entity, individual_cursor, pct, player_entity, ratio, rows
 
 PLAYER_QUERY = """
 WITH base AS (
@@ -38,7 +38,7 @@ WITH base AS (
          mode() WITHIN GROUP (ORDER BY team_key) AS team_key
   FROM base GROUP BY player_key
 )
-SELECT p.player_name, t.team_name, pp.*
+SELECT p.player_name, p.player_id, t.team_name, pp.*
 FROM per_player pp
 JOIN dim_player p ON p.player_key = pp.player_key AND NOT p.is_placeholder
 JOIN dim_team t ON t.team_key = pp.team_key
@@ -47,7 +47,7 @@ JOIN dim_team t ON t.team_key = pp.team_key
 PAIR_QUERY = """
 WITH base AS (
   SELECT f.individual_match_key, f.match_id, d.discipline_code,
-         b1.side_code, b1.player_key AS p1, b2.player_key AS p2,
+         least(b1.player_key, b2.player_key) AS k1, greatest(b1.player_key, b2.player_key) AS k2,
          CASE WHEN b1.side_code = 'H' THEN f.home_team_key ELSE f.away_team_key END AS team_key,
          (f.winner_side = CASE WHEN b1.side_code = 'H' THEN 'home' ELSE 'away' END) AS won
   FROM fact_individual_match f
@@ -62,22 +62,25 @@ WITH base AS (
     AND (%(division)s::text IS NULL OR dv.division_name = %(division)s::text)
     AND NOT f.is_walkover
     AND d.discipline_code = ANY(%(doubles)s)
+), pairs AS (
+  SELECT k1, k2, mode() WITHIN GROUP (ORDER BY team_key) AS team_key,
+         string_agg(DISTINCT discipline_code, ',') AS codes,
+         count(*) AS played, count(*) FILTER (WHERE won) AS wins
+  FROM base GROUP BY k1, k2
+  HAVING count(*) >= %(min_pair)s
 )
-SELECT least(pa.player_name, pb.player_name) AS a, greatest(pa.player_name, pb.player_name) AS b,
-       t.team_name, string_agg(DISTINCT base.discipline_code, ',') AS codes,
-       count(*) AS played, count(*) FILTER (WHERE won) AS wins
-FROM base
-JOIN dim_player pa ON pa.player_key = base.p1 AND NOT pa.is_placeholder
-JOIN dim_player pb ON pb.player_key = base.p2 AND NOT pb.is_placeholder
-JOIN dim_team t ON t.team_key = base.team_key
-GROUP BY 1, 2, 3
-HAVING count(*) >= %(min_pair)s
+SELECT pa.player_name AS a, pa.player_id AS a_id, pb.player_name AS b, pb.player_id AS b_id,
+       t.team_name, pairs.codes, pairs.played, pairs.wins
+FROM pairs
+JOIN dim_player pa ON pa.player_key = pairs.k1 AND NOT pa.is_placeholder
+JOIN dim_player pb ON pb.player_key = pairs.k2 AND NOT pb.is_placeholder
+JOIN dim_team t ON t.team_key = pairs.team_key
 """
 
 
 def _player_entry(r: dict[str, Any]) -> dict[str, Any]:
     return {
-        "player": entity(r["player_name"]),
+        "player": player_entity(r["player_name"], r["player_id"]),
         "team": entity(r["team_name"]),
         "matches": r["matches"],
         "wins": r["wins"],
@@ -180,7 +183,7 @@ def leaderboards(settings: Settings, season: int, division: str | None, min_matc
         ),
         "pairs": [
             {
-                "players": [entity(r["a"]), entity(r["b"])],
+                "players": [player_entity(r["a"], r["a_id"]), player_entity(r["b"], r["b_id"])],
                 "team": entity(r["team_name"]),
                 "disciplines": (r["codes"] or "").split(","),
                 "matches": r["played"],

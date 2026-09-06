@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..settings import Settings
-from .common import entity, individual_cursor, rows
+from .common import entity, individual_cursor, player_entity, rows
 
 
 def search(settings: Settings, query: str, season: int | None, limit: int) -> dict[str, Any]:
@@ -30,7 +30,7 @@ def search(settings: Settings, query: str, season: int | None, limit: int) -> di
         ]
         cur.execute(
             """
-            SELECT p.player_name, count(*) AS matches, max(s.season_id) AS last_season,
+            SELECT p.player_name, p.player_id, count(*) AS matches, max(s.season_id) AS last_season,
                    (SELECT t.team_name
                       FROM bridge_individual_match_player b2
                       JOIN fact_individual_match f2 ON f2.individual_match_key = b2.individual_match_key
@@ -43,7 +43,7 @@ def search(settings: Settings, query: str, season: int | None, limit: int) -> di
             JOIN dim_season s ON s.season_key = f.season_key
             WHERE NOT p.is_placeholder AND p.player_name ILIKE %(pattern)s
               AND (%(season)s::int IS NULL OR s.season_id = %(season)s::int)
-            GROUP BY p.player_key, p.player_name
+            GROUP BY p.player_key, p.player_name, p.player_id
             ORDER BY position(lower(%(q)s) IN lower(p.player_name)), matches DESC, p.player_name
             LIMIT %(limit)s
             """,
@@ -51,7 +51,7 @@ def search(settings: Settings, query: str, season: int | None, limit: int) -> di
         )
         players = [
             {
-                **entity(r["player_name"]),
+                **player_entity(r["player_name"], r["player_id"]),
                 "matches": r["matches"],
                 "lastSeason": r["last_season"],
                 "team": entity(r["team_name"]) if r["team_name"] else None,

@@ -9,6 +9,8 @@ from .common import (
     individual_cursor,
     match_type_label,
     pct,
+    player_entities,
+    player_entity,
     result_code,
     rows,
 )
@@ -181,7 +183,7 @@ def player_comparison(settings: Settings, slug_a: str, slug_b: str, season: int 
             teams = player_teams(cur, params)
             sides.append(
                 {
-                    "player": entity(player["player_name"]),
+                    "player": player_entity(player["player_name"], player["player_id"]),
                     "currentTeam": teams[0]["team"] if teams else None,
                     "summary": player_summary(cur, params),
                     "form": [m["result"] for m in matches[:10]],
@@ -248,8 +250,8 @@ def player_comparison(settings: Settings, slug_a: str, slug_b: str, season: int 
                 "bSets": r["b_sets"],
                 "walkover": r["is_walkover"],
                 "setScores": scores,
-                "aPartner": entity(r["a_partner"]) if r["a_partner"] else None,
-                "bPartner": entity(r["b_partner"]) if r["b_partner"] else None,
+                "aPartner": (player_entities(r["a_partner"]) or [None])[0],
+                "bPartner": (player_entities(r["b_partner"]) or [None])[0],
             }
             (together if r["together"] else meetings).append(item)
 
