@@ -95,11 +95,28 @@ def compute_ratings(settings: Settings) -> dict[int, dict[str, dict[str, float |
 # --- helpers ----------------------------------------------------------------
 
 
+SHRINK_MATCHES = 6  # a discipline rating built on fewer matches than this leans on the player's other disciplines
+
+
 def _rating(ratings: dict, pid: int, key: str) -> tuple[float, int]:
-    entry = ratings.get(pid, {}).get(key)
-    if not entry:
+    """Rating and match count for one discipline. A discipline with few matches is
+    pulled toward the player's match-weighted rating in the others, because a strong
+    doubles player with four mixed matches is far more likely a good mixed player than
+    an average one. The returned count is the discipline's own."""
+    entries = ratings.get(pid, {})
+    own = entries.get(key)
+    n = int(own["matches"]) if own else 0
+    r = float(own["rating"]) if own else None
+    others = [(float(e["rating"]), int(e["matches"])) for k, e in entries.items() if k != key and int(e["matches"]) > 0]
+    if others:
+        weight = sum(m for _, m in others)
+        other_rating = sum(rt * m for rt, m in others) / weight
+        if r is None:
+            return other_rating, 0
+        return (n * r + SHRINK_MATCHES * other_rating) / (n + SHRINK_MATCHES), n
+    if r is None:
         return DEFAULT_PRIOR, 0
-    return float(entry["rating"]), int(entry["matches"])
+    return r, n
 
 
 def _order(units: list[dict[str, Any]], opp_strength: list[float], tolerance: int) -> tuple[float, list[dict[str, Any]]]:
@@ -427,5 +444,5 @@ def optimise(
         "candidates": top,
         "excluded": excluded,
         "notes": notes,
-        "model": "Elo pr. spiller og disciplin fra alle ligakampe i data; par tæller som gennemsnittet. 1500 er en gennemsnitlig Danmarksserie-spiller.",
+        "model": "Elo pr. spiller og disciplin fra alle ligakampe i data; par tæller som gennemsnittet. Discipliner med få kampe læner sig op ad spillerens øvrige discipliner. 1500 er en gennemsnitlig Danmarksserie-spiller.",
     }

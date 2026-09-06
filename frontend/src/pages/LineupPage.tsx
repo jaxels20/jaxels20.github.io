@@ -484,7 +484,15 @@ export function LineupPage() {
                                       <span key={o.slug}>
                                         {i > 0 && ' / '}
                                         <PlayerLink player={o} />
-                                        <span className="dim" style={{ fontWeight: 400 }}> {o.rating}{o.matches < 5 ? '?' : ''}</span>
+                                        <span
+                                          className="dim"
+                                          style={{ fontWeight: 400 }}
+                                          title={`Styrke ${o.rating} i ${row.slot.split('. ')[1]} efter ${o.matches} ${o.matches === 1 ? 'kamp' : 'kampe'} i den disciplin`}
+                                        >
+                                          {' '}
+                                          {o.rating}
+                                          {o.matches < 5 ? '?' : ''}
+                                        </span>
                                       </span>
                                     ))}
                                   </td>
@@ -497,7 +505,14 @@ export function LineupPage() {
                                         <span key={t.slug}>
                                           {i > 0 && ' / '}
                                           <PlayerLink player={t} />
-                                          <span className="dim"> {t.rating}{t.matches < 5 ? '?' : ''}</span>
+                                          <span
+                                            className="dim"
+                                            title={`Styrke ${t.rating} i ${row.slot.split('. ')[1]} efter ${t.matches} ${t.matches === 1 ? 'kamp' : 'kampe'} i den disciplin`}
+                                          >
+                                            {' '}
+                                            {t.rating}
+                                            {t.matches < 5 ? '?' : ''}
+                                          </span>
                                         </span>
                                       ))
                                     ) : (
@@ -510,8 +525,9 @@ export function LineupPage() {
                           </table>
                         </div>
                         <p className="note">
-                          Tallet efter navnet er styrken i den disciplin; ? betyder under 5 ligakampe i data. Sejrschancen er
-                          beregnet ud fra styrkeforskellen, og modstanderens opstilling er et gæt.
+                          Tallet efter navnet er styrken i netop den disciplin, og ? betyder under 5 ligakampe i den disciplin i data;
+                          spilleren kan sagtens have mange kampe i andre discipliner, som styrken så læner sig op ad. Hold musen over
+                          tallet for antallet. Sejrschancen er beregnet ud fra styrkeforskellen, og modstanderens opstilling er et gæt.
                         </p>
                       </>
                     )}
