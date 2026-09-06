@@ -547,5 +547,8 @@ export type LineupSetup = {
 
 export type LineupPoints = {
   seasonId: number
-  points: Record<string, { id: number; club: string | null; single: number | null; double: number | null; mix: number | null; seasonId: number }>
+  points: Record<
+    string,
+    { id: number; club: string | null; ageGroup: string | null; youth: boolean; single: number | null; double: number | null; mix: number | null; seasonId: number }
+  >
 }

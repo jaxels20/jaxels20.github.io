@@ -14,6 +14,9 @@ export type LineupPlayer = {
   name: string
   sex: Sex | null
   points: Points | null
+  /** U17/U19 per the ranking list. §38 stk. 5: placed by assessed senior strength, not points. */
+  youth: boolean
+  ageGroup?: string | null
 }
 
 export type SlotSpec = { key: string; category: Category; number: number; size: 1 | 2 }
@@ -144,6 +147,22 @@ export function checkLineup(
     })
   }
 
+  // §38 stk. 5: youth players are placed by assessed senior strength, so say who they are.
+  const youthSeen = new Set<number>()
+  for (const slot of slots) {
+    for (const p of filled(slot.key)) {
+      if (p.youth && !youthSeen.has(p.id)) {
+        youthSeen.add(p.id)
+        issues.push({
+          severity: 'info',
+          rule: '§ 38 stk. 5',
+          message: `${p.name} er ${p.ageGroup ?? 'U17/U19'}-spiller og skal placeres efter aktuel styrke i seniorregi, ikke efter point. Klubben vurderer.`,
+          slots: [slot.key],
+        })
+      }
+    }
+  }
+
   // §37: no player twice in the same category, and (13-match format) at most two matches.
   const perPlayer = new Map<number, { name: string; slots: SlotSpec[] }>()
   for (const slot of slots) {
@@ -219,12 +238,22 @@ export function checkLineup(
         if (lower > upper + tolerance) {
           const nameA = a.map((p) => p?.name).join(' / ')
           const nameB = b.map((p) => p?.name).join(' / ')
-          issues.push({
-            severity: 'error',
-            rule: inCategory[i].size === 1 ? '§ 38 stk. 2' : '§ 38 stk. 3',
-            message: `${slotLabel(inCategory[j])} (${nameB}, ${lower} point) har ${lower - upper} point mere end ${slotLabel(inCategory[i])} (${nameA}, ${upper} point). Højst ${tolerance} point er tilladt.`,
-            slots: [inCategory[i].key, inCategory[j].key],
-          })
+          const youthInvolved = [...a, ...b].some((p) => p?.youth)
+          issues.push(
+            youthInvolved
+              ? {
+                  severity: 'warning',
+                  rule: '§ 38 stk. 5',
+                  message: `${slotLabel(inCategory[j])} (${nameB}, ${lower} point) står under ${slotLabel(inCategory[i])} (${nameA}, ${upper} point) trods ${lower - upper} point mere. Da en U17/U19-spiller indgår, afgøres rækkefølgen af vurderet seniorstyrke, ikke point. Vurder selv.`,
+                  slots: [inCategory[i].key, inCategory[j].key],
+                }
+              : {
+                  severity: 'error',
+                  rule: inCategory[i].size === 1 ? '§ 38 stk. 2' : '§ 38 stk. 3',
+                  message: `${slotLabel(inCategory[j])} (${nameB}, ${lower} point) har ${lower - upper} point mere end ${slotLabel(inCategory[i])} (${nameA}, ${upper} point). Højst ${tolerance} point er tilladt.`,
+                  slots: [inCategory[i].key, inCategory[j].key],
+                },
+          )
         }
       }
     }
@@ -244,12 +273,21 @@ export function checkLineup(
             const detail = h.categories
               .map((c) => `${categoryLabel(c)} ${pointsOf(p, c)} mod ${pointsOf(h.player, c)}`)
               .join(', ')
-            issues.push({
-              severity: 'error',
-              rule: '§ 38 stk. 4',
-              message: `${p.name} er ikke lovlig under ${higher.teamName}: mere end 50 point over ${h.player.name} i alle de kategorier ${h.player.name} spiller (${detail}).`,
-              slots: [slot.key],
-            })
+            if (p.youth || h.player.youth) {
+              issues.push({
+                severity: 'warning',
+                rule: '§ 38 stk. 5',
+                message: `${p.name} har flere point end ${h.player.name} (${higher.teamName}) i alle de kategorier ${h.player.name} spiller (${detail}). Da en U17/U19-spiller indgår, skal ${p.name} vurderes svagere i mindst én af dem for at være lovlig. Vurder selv.`,
+                slots: [slot.key],
+              })
+            } else {
+              issues.push({
+                severity: 'error',
+                rule: '§ 38 stk. 4',
+                message: `${p.name} er ikke lovlig under ${higher.teamName}: mere end 50 point over ${h.player.name} i alle de kategorier ${h.player.name} spiller (${detail}).`,
+                slots: [slot.key],
+              })
+            }
           }
         }
       }
@@ -262,6 +300,6 @@ export function checkLineup(
 
 export function verdict(issues: Issue[]): 'legal' | 'illegal' | 'incomplete' {
   if (issues.some((i) => i.severity === 'error')) return 'illegal'
-  if (issues.some((i) => i.severity === 'info')) return 'incomplete'
+  if (issues.some((i) => i.severity === 'info' && i.rule === '§ 37')) return 'incomplete'
   return 'legal'
 }

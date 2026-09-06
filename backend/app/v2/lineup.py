@@ -222,9 +222,21 @@ def _points_one(player_id: int) -> dict[str, Any]:
     def build() -> dict[str, Any]:
         snapshot = _season_snapshot(current_season(), player_id)
         by_list = {row["list"].lower(): row for row in snapshot["lists"]}
+        # The "Række" column carries the player's age group, e.g. "U19 M" or "SEN E-M".
+        # §38 stk. 5 treats U17/U19 players by assessed strength rather than points.
+        age_group = None
+        for row in snapshot["lists"]:
+            token = (row.get("group") or "").split(" ")[0]
+            if re.match(r"^U\d\d$", token):
+                age_group = token
+                break
+            if token == "SEN" and age_group is None:
+                age_group = "SEN"
         return {
             "id": player_id,
             "club": snapshot["club"],
+            "ageGroup": age_group,
+            "youth": bool(age_group and age_group.startswith("U")),
             "single": by_list.get("single", {}).get("points"),
             "double": by_list.get("double", {}).get("points"),
             "mix": by_list.get("mix", {}).get("points"),

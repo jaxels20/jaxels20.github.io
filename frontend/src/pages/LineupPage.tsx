@@ -111,6 +111,8 @@ export function LineupPage() {
       name: p.name,
       sex: sexOverride[id] ?? p.sex,
       points: pts ? { single: pts.single, double: pts.double, mix: pts.mix } : null,
+      youth: Boolean(pts?.youth),
+      ageGroup: pts?.ageGroup ?? null,
     }
   }
 
@@ -247,7 +249,13 @@ export function LineupPage() {
           <section className={`lineup-verdict lineup-verdict-${status}`} aria-live="polite">
             <div>
               <strong>
-                {status === 'legal' ? 'Lovlig opstilling' : status === 'illegal' ? 'Opstillingen er ikke lovlig' : 'Opstillingen er ikke komplet'}
+                {status === 'legal'
+                  ? issues.some((i) => i.severity === 'warning')
+                    ? 'Lovlig på point, men kræver vurdering'
+                    : 'Lovlig opstilling'
+                  : status === 'illegal'
+                    ? 'Opstillingen er ikke lovlig'
+                    : 'Opstillingen er ikke komplet'}
               </strong>
               <span className="lineup-verdict-sub">
                 {format.division} · {format.matches} kampe · mindst {format.minMen} herrer og {format.minWomen} damer
@@ -385,6 +393,11 @@ export function LineupPage() {
                               )}
                             </td>
                             <td>
+                              {pts?.youth && (
+                                <span className="chip chip-accent" title="U17/U19: placeres efter vurderet seniorstyrke (§ 38 stk. 5)" style={{ marginRight: 4 }}>
+                                  {pts.ageGroup}
+                                </span>
+                              )}
                               {sex ? (
                                 <SexBadge sex={sex} />
                               ) : (
@@ -464,7 +477,8 @@ export function LineupPage() {
                   <li>Point er den aktuelle rangliste på badmintonplayer.dk. Reglementet bruger månedens første offentliggjorte liste fra den 10. i måneden, så tallene kan afvige få dage om måneden.</li>
                   <li>Singler skal stå i pointrækkefølge med højst 50 points spillerum; doubler efter parrets samlede point med højst 100 (§ 38 stk. 2 og 3).</li>
                   <li>Spillere på et lavere hold skal i mindst én af de kategorier, det højere holds spillere af samme køn spiller, ligge under eller højst 50 point over (§ 38 stk. 4).</li>
-                  <li>U17/U19-vurderinger, papirhold, reserver og karantæne (§ 38 stk. 5 og 7, § 43 og § 44) tjekkes ikke.</li>
+                  <li>U17/U19-spillere genkendes på ranglisten og markeres. Reglementet kræver, at de placeres efter vurderet styrke i seniorregi, ikke point (§ 38 stk. 5), så sammenligninger hvor de indgår vises som advarsler til klubbens egen vurdering.</li>
+                  <li>Papirhold, reserver og karantæne (§ 38 stk. 7, § 43 og § 44) tjekkes ikke.</li>
                   <li>
                     Kilde:{' '}
                     <a className="link" href="https://badminton.dk/holdturneringsregler/" target="_blank" rel="noreferrer noopener">
