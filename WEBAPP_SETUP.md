@@ -64,8 +64,8 @@ player with that name.
 - `GET /api/v2/seasons` (also returns `dataUpdated` and `latestMatch`)
 - `GET /api/v2/search?q=<text>&season=<year>&limit=8` (teams + players)
 - `GET /api/v2/resolve?kind=team|player&slug=<slug>` (slug to display name)
-- `GET /api/v2/clubs?season=<id>` (every club in the season with team count, best division and record)
-- `GET /api/v2/clubs/<slug>?season=<id>` (a club: teams with division, group and standing, most used players this season and all time, recent team matches, division history)
+- `GET /api/v2/clubs?season=<id>` (every club in the season with team count, best division and record; without `season`, across all seasons)
+- `GET /api/v2/clubs/<slug>?season=<id>` (a club: teams with division, group and standing, most used players this season and all time, recent team matches, division history; without `season`, teams are aggregated across all seasons in `teamsAllTime`)
 - `GET /api/v2/teams/{slug}?season=<year>`
 - `GET /api/v2/players/{slug}?season=<year>`
 - `GET /api/v2/players/{slug}/ranking` (ranking points and level, fetched live from

@@ -70,14 +70,15 @@ def team(slug: str, season: int | None = None, settings: Settings = Depends(get_
 
 
 @router.get("/clubs")
-def clubs(season: int, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
-    """All clubs in a season with team counts, best division and record."""
+def clubs(season: int | None = None, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
+    """All clubs in a season (or across all seasons) with team counts, best division and record."""
     return _run(f"clubs:{season}", lambda: list_clubs(settings, season))
 
 
 @router.get("/clubs/{slug}")
 def club(slug: str, season: int | None = None, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
-    """A club: its teams and their divisions and standings, the most used players, and history."""
+    """A club: its teams and their divisions and standings, the most used players, and history.
+    Without a season, everything is aggregated across all seasons."""
     return _run(f"club:{slug}:{season}", lambda: club_profile(settings, slug, season))
 
 

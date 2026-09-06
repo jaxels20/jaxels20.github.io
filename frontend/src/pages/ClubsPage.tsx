@@ -10,7 +10,7 @@ import { formatPct, record, seasonLabel } from '../lib/format'
 
 export function ClubsPage() {
   const { season, setSeason, resolved } = useSeasonParam('latest')
-  const { data, error, isLoading } = useClubs(resolved ? season : null)
+  const { data, error, isLoading } = useClubs(season, resolved)
   const [filter, setFilter] = useState('')
   usePageTitle('Klubber')
 
@@ -23,12 +23,17 @@ export function ClubsPage() {
     <div className="stack" style={{ gap: '1.25rem' }}>
       <div className="page-head">
         <div>
-          <div className="eyebrow">Klubber · {seasonLabel(season)}</div>
+          <div className="eyebrow">Klubber · {season === null ? 'Alle sæsoner' : seasonLabel(season)}</div>
           <h1>Alle klubber i holdturneringen</h1>
-          <p className="page-sub">Hver klub med sine hold, den bedste række klubben er med i, og resultaterne på tværs af holdene. Klik på en klub for hold, spillere og historik.</p>
+          <p className="page-sub">
+            {season === null
+              ? 'Hver klub med alle de hold, den har stillet i data, den bedste række klubben har været med i, og resultaterne på tværs af holdene og sæsonerne.'
+              : 'Hver klub med sine hold, den bedste række klubben er med i, og resultaterne på tværs af holdene.'}{' '}
+            Klik på en klub for hold, spillere og historik.
+          </p>
         </div>
         <div className="page-tools">
-          <SeasonPicker value={season} allowAll={false} onChange={(next) => next !== null && setSeason(next)} />
+          <SeasonPicker value={season} onChange={(next) => setSeason(next)} />
           <input className="input" type="search" placeholder="Filtrer klubber…" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtrer klubber" style={{ minWidth: 200 }} />
         </div>
       </div>
@@ -40,7 +45,7 @@ export function ClubsPage() {
       ) : clubs.length === 0 ? (
         <EmptyState>Ingen klubber matcher.</EmptyState>
       ) : (
-        <Card title={`${clubs.length} klubber`} subtitle="Sorteret efter bedste række, derefter antal hold.">
+        <Card title={`${clubs.length} klubber`} subtitle={season === null ? 'Sorteret efter den bedste række klubben har spillet i, derefter antal hold i alt.' : 'Sorteret efter bedste række, derefter antal hold.'}>
           <div className="table-wrap">
             <table className="table">
               <thead>

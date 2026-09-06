@@ -657,6 +657,25 @@ export type ClubTeam = ClubTeamGroup & {
   alsoIn: ClubTeamGroup[]
 }
 
+export type ClubTeamAllTime = {
+  team: Entity
+  rank: number
+  seasons: number
+  firstSeason: number
+  lastSeason: number
+  divisions: { division: string; seasons: number; tier: number }[]
+  latestDivision: string
+  tier: number
+  played: number
+  wins: number
+  draws: number
+  losses: number
+  winPct: number | null
+  best: { seasonId: number; division: string; groupName: string; groupId: number; position: number; groupSize: number } | null
+  form: Result[]
+  latest: ClubMatch | null
+}
+
 export type ClubPlayer = {
   player: Entity
   teamMatches: number
@@ -684,7 +703,10 @@ export type ClubProfile = {
     players: number
     multiTeamPlayers: number
   }
+  /** Teams in the chosen season; empty when all seasons are shown. */
   teams: ClubTeam[]
+  /** Teams aggregated across seasons; only filled when no season is chosen. */
+  teamsAllTime: ClubTeamAllTime[]
   players: ClubPlayer[]
   allTimePlayers: ClubPlayer[]
   matches: ClubMatch[]
@@ -703,4 +725,4 @@ export type ClubIndexRow = {
   winPct: number | null
 }
 
-export type ClubIndex = { seasonId: number; clubs: ClubIndexRow[] }
+export type ClubIndex = { seasonId: number | null; clubs: ClubIndexRow[] }

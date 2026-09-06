@@ -127,7 +127,7 @@ JOIN dim_team ht ON ht.team_key = f.home_team_key
 JOIN dim_team at ON at.team_key = f.away_team_key
 LEFT JOIN dim_round r ON r.round_key = f.round_key
 LEFT JOIN dim_date dd ON dd.date_key = f.match_date_key
-WHERE s.season_id = %(season)s
+WHERE (%(season)s::int IS NULL OR s.season_id = %(season)s::int)
   AND (EXISTS (SELECT 1 FROM dim_team t WHERE t.team_key = f.home_team_key AND {_team_filter()})
        OR EXISTS (SELECT 1 FROM dim_team t WHERE t.team_key = f.away_team_key AND {_team_filter()}))
 ORDER BY dd.full_date DESC NULLS LAST, f.match_id DESC
@@ -176,7 +176,51 @@ def _merge_groups(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(out, key=lambda r: (r["tier"], r["rank"], r["team"]["name"]))
 
 
-def _matches(cur: psycopg.Cursor[Any], base: str, season: int) -> list[dict[str, Any]]:
+def _aggregate_teams(standings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One row per team across every season: seasons played, divisions, best finish, total record."""
+    by_team: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in standings:
+        by_team[row["team"]["slug"]].append(row)
+    out = []
+    for entries in by_team.values():
+        seasons = sorted({r["seasonId"] for r in entries})
+        per_season = {sid: _merge_groups([r for r in entries if r["seasonId"] == sid])[0] for sid in seasons}
+        counts: dict[str, int] = defaultdict(int)
+        for sid in seasons:
+            counts[per_season[sid]["division"]] += 1
+        divisions = sorted(
+            ({"division": d, "seasons": n, "tier": division_tier(d)} for d, n in counts.items()),
+            key=lambda d: (d["tier"], -d["seasons"]),
+        )
+        finished = [per_season[sid] for sid in seasons if per_season[sid]["position"] and per_season[sid]["played"] > 0]
+        best = min(finished, key=lambda r: (r["tier"], r["position"], -r["seasonId"]), default=None)
+        latest = per_season[seasons[-1]]
+        played = sum(r["played"] for r in entries)
+        wins = sum(r["wins"] for r in entries)
+        draws = sum(r["draws"] for r in entries)
+        losses = sum(r["losses"] for r in entries)
+        out.append(
+            {
+                "team": latest["team"],
+                "rank": latest["rank"],
+                "seasons": len(seasons),
+                "firstSeason": seasons[0],
+                "lastSeason": seasons[-1],
+                "divisions": divisions,
+                "latestDivision": latest["division"],
+                "tier": latest["tier"],
+                "played": played,
+                "wins": wins,
+                "draws": draws,
+                "losses": losses,
+                "winPct": pct(wins, played),
+                "best": {k: best[k] for k in ("seasonId", "division", "groupName", "groupId", "position", "groupSize")} if best else None,
+            }
+        )
+    return sorted(out, key=lambda t: (t["tier"], t["rank"], t["team"]["name"]))
+
+
+def _matches(cur: psycopg.Cursor[Any], base: str, season: int | None) -> list[dict[str, Any]]:
     cur.execute(MATCHES_SQL, {**_club_params(base), "season": season})
     out = []
     for r in rows(cur):
@@ -280,10 +324,14 @@ def club_profile(settings: Settings, slug: str, season: int | None) -> dict[str,
         base = resolve_club(cur, slug)
         standings = _standings(cur, base)
         seasons_played = sorted({row["seasonId"] for row in standings}, reverse=True)
-        if season is None or season not in seasons_played:
-            season = seasons_played[0] if seasons_played else season
-        teams = _merge_groups([row for row in standings if row["seasonId"] == season])
-        matches = _matches(cur, base, season) if season else []
+        # No season means every season. A season the club did not play in falls back to its latest.
+        all_seasons = season is None
+        if not all_seasons and season not in seasons_played:
+            season = seasons_played[0] if seasons_played else None
+            all_seasons = season is None
+        teams = [] if all_seasons else _merge_groups([row for row in standings if row["seasonId"] == season])
+        teams_all_time = _aggregate_teams(standings) if all_seasons else []
+        matches = _matches(cur, base, season)
 
     # Form and the latest result per team, from this season's team matches (newest first).
     form: dict[str, list[str]] = defaultdict(list)
@@ -295,7 +343,7 @@ def club_profile(settings: Settings, slug: str, season: int | None) -> dict[str,
         if len(form[slug_]) < 5:
             form[slug_].append(m["result"])
         latest.setdefault(slug_, m)
-    for t in teams:
+    for t in teams + teams_all_time:
         t["form"] = list(reversed(form.get(t["team"]["slug"], [])))
         t["latest"] = latest.get(t["team"]["slug"])
 
@@ -307,8 +355,8 @@ def club_profile(settings: Settings, slug: str, season: int | None) -> dict[str,
     with individual_cursor(settings) as cur:
         cur.execute(SEASONS_SQL, _club_params(base))
         seasons = [{"seasonId": r["season_id"], "teams": r["teams"], "teamMatches": r["team_matches"]} for r in rows(cur)]
-        players = _players(cur, base, season, 300) if season else []
-        all_time = _players(cur, base, None, 25)
+        all_time = _players(cur, base, None, 300)
+        players = all_time if all_seasons else _players(cur, base, season, 300)
 
     # The seasons list drives the picker; standings may know a season the individual
     # warehouse does not (unplayed fixtures only), so merge the two.
@@ -326,10 +374,10 @@ def club_profile(settings: Settings, slug: str, season: int | None) -> dict[str,
 
     return {
         "club": club_entity(base),
-        "seasonId": season,
+        "seasonId": None if all_seasons else season,
         "seasons": seasons,
         "summary": {
-            "teams": len(teams),
+            "teams": len(teams_all_time) if all_seasons else len(teams),
             "teamMatches": len(played),
             "teamWins": wins,
             "teamDraws": draws,
@@ -339,8 +387,9 @@ def club_profile(settings: Settings, slug: str, season: int | None) -> dict[str,
             "multiTeamPlayers": sum(1 for p in players if len(p["teams"]) > 1),
         },
         "teams": teams,
+        "teamsAllTime": teams_all_time,
         "players": players[:60],
-        "allTimePlayers": all_time,
+        "allTimePlayers": all_time[:25],
         "matches": [m for m in matches if m["played"]][:40],
         "history": history_rows,
     }
@@ -381,7 +430,7 @@ WITH tm AS (
   JOIN dim_division dv ON dv.division_key = g.division_key
   JOIN dim_team ht ON ht.team_key = f.home_team_key
   JOIN dim_team at ON at.team_key = f.away_team_key
-  WHERE s.season_id = %(season)s
+  WHERE (%(season)s::int IS NULL OR s.season_id = %(season)s::int)
 ), sides AS (
   SELECT home_name AS team_name, division_name, played, home_win AS won, is_draw AS draw FROM tm
   UNION ALL
@@ -400,8 +449,9 @@ ORDER BY 1
 """
 
 
-def list_clubs(settings: Settings, season: int) -> dict[str, Any]:
-    """Every club with a team in the season: how many teams, their best division, and the record."""
+def list_clubs(settings: Settings, season: int | None) -> dict[str, Any]:
+    """Every club with a team in the season (or ever, when no season is given): how many
+    teams, their best division, and the record."""
     with team_cursor(settings) as cur:
         cur.execute(CLUB_INDEX_SQL, {"season": season})
         clubs = []

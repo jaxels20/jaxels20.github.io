@@ -7,7 +7,7 @@ import { Card, EmptyState, ErrorState, FormPills, PageSkeleton, PlayerLink, Resu
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useSeasonParam } from '../hooks/useSeasonParam'
 import { disciplineName, formatDate, formatPct, pluralize, record, seasonLabel } from '../lib/format'
-import type { ClubPlayer, ClubTeam } from '../types'
+import type { ClubPlayer, ClubTeam, ClubTeamAllTime } from '../types'
 
 function placement(t: { position: number | null; groupSize: number; played: number }): string {
   if (t.position === null || t.played === 0) return 'Ikke spillet endnu'
@@ -90,6 +90,50 @@ function TeamRow({ t }: { t: ClubTeam }) {
   )
 }
 
+function AllTimeTeamRow({ t, onSeason }: { t: ClubTeamAllTime; onSeason: (season: number) => void }) {
+  return (
+    <tr>
+      <td className="primary">
+        <TeamLink team={t.team} />
+      </td>
+      <td className="num">
+        {t.seasons}
+        <div className="dim" style={{ fontSize: '0.78rem', fontWeight: 400 }}>
+          {t.firstSeason === t.lastSeason ? seasonLabel(t.firstSeason) : `${seasonLabel(t.firstSeason)} – ${seasonLabel(t.lastSeason)}`}
+        </div>
+      </td>
+      <td>
+        {t.divisions.map((d, i) => (
+          <span key={d.division}>
+            {i > 0 && ', '}
+            {d.division} <span className="dim">({d.seasons})</span>
+          </span>
+        ))}
+      </td>
+      <td>
+        {t.best ? (
+          <>
+            <span className={`chip ${t.best.position === 1 ? 'chip-accent' : ''}`.trim()}>
+              Nr. {t.best.position} af {t.best.groupSize}
+            </span>
+            <div className="dim" style={{ fontSize: '0.78rem' }}>
+              {t.best.division},{' '}
+              <button type="button" className="link" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit' }} onClick={() => onSeason(t.best!.seasonId)}>
+                {seasonLabel(t.best.seasonId)}
+              </button>
+            </div>
+          </>
+        ) : (
+          <span className="dim">–</span>
+        )}
+      </td>
+      <td className="r num hide-sm">{t.played}</td>
+      <td className="num">{record(t.wins, t.draws, t.losses)}</td>
+      <td className="r num">{formatPct(t.winPct)}</td>
+    </tr>
+  )
+}
+
 export function ClubPage() {
   const { slug } = useParams()
   const { season, setSeason, resolved, explicit } = useSeasonParam('latest')
@@ -109,11 +153,20 @@ export function ClubPage() {
   if (isLoading || !data) return <PageSkeleton />
 
   const s = data.summary
+  const allSeasons = data.seasonId === null
   const shownSeason = data.seasonId
-  const players = playerScope === 'season' ? data.players : data.allTimePlayers
+  const seasonSpan =
+    data.seasons.length > 0
+      ? data.seasons.length === 1
+        ? seasonLabel(data.seasons[0].seasonId)
+        : `${seasonLabel(data.seasons[data.seasons.length - 1].seasonId)} – ${seasonLabel(data.seasons[0].seasonId)}`
+      : ''
+  const players = allSeasons || playerScope === 'all' ? (allSeasons ? data.players : data.allTimePlayers) : data.players
   const visiblePlayers = showAllPlayers ? players : players.slice(0, 12)
   const matches = showAllMatches ? data.matches : data.matches.slice(0, 10)
-  const firstTeam = data.teams[0]?.team
+  const firstTeam = allSeasons ? data.teamsAllTime[0]?.team : data.teams[0]?.team
+  const hasTeams = allSeasons ? data.teamsAllTime.length > 0 : data.teams.length > 0
+  const divisionsNow = (allSeasons ? data.teamsAllTime.map((t) => t.latestDivision) : data.teams.map((t) => t.division)).filter((d, i, arr) => arr.indexOf(d) === i)
 
   return (
     <div className="stack" style={{ gap: '1.25rem' }}>
@@ -123,14 +176,14 @@ export function ClubPage() {
             <div className="eyebrow">Klub</div>
             <h1>{data.club.name}</h1>
             <div className="hero-meta">
-              <span>{seasonLabel(shownSeason)}</span>
+              <span>{allSeasons ? `Alle sæsoner · ${seasonSpan}` : seasonLabel(shownSeason)}</span>
               <span className="chip chip-accent">{pluralize(s.teams, 'hold', 'hold')}</span>
               {s.teamMatches > 0 && <span>{record(s.teamWins, s.teamDraws, s.teamLosses)} i holdkampe</span>}
               {s.players > 0 && <span>{s.players} spillere brugt</span>}
             </div>
           </div>
           <div className="page-tools">
-            <SeasonPicker value={shownSeason} allowAll={false} onChange={(next) => next !== null && setSeason(next)} />
+            <SeasonPicker value={shownSeason} onChange={(next) => setSeason(next)} />
             {firstTeam && (
               <Link className="btn" to={`/holdopstilling?klub=${firstTeam.slug}`}>
                 Sæt holdene
@@ -140,7 +193,7 @@ export function ClubPage() {
         </div>
       </section>
 
-      {data.teams.length === 0 ? (
+      {!hasTeams ? (
         <EmptyState>
           {data.club.name} har ingen hold i {seasonLabel(shownSeason)}.{' '}
           {data.seasons.length > 0 && (
@@ -160,56 +213,91 @@ export function ClubPage() {
       ) : (
         <>
           <div className="stat-grid">
-            <Stat label="Hold" value={s.teams} sub={data.teams.map((t) => t.division).filter((d, i, arr) => arr.indexOf(d) === i).join(', ')} />
-            <Stat label="Holdkampe" value={s.teamMatches} sub={s.teamMatches > 0 ? `${s.teamWins} vundet, ${s.teamDraws ? `${s.teamDraws} uafgjort, ` : ''}${s.teamLosses} tabt` : 'Ingen spillet endnu'} />
-            <Stat label="Vundne holdkampe" value={formatPct(s.teamWinPct)} sub="På tværs af alle klubbens hold" accent />
+            <Stat label={allSeasons ? 'Hold i alt' : 'Hold'} value={s.teams} sub={allSeasons ? `Senest i ${divisionsNow.join(', ')}` : divisionsNow.join(', ')} />
+            <Stat
+              label="Holdkampe"
+              value={s.teamMatches}
+              sub={s.teamMatches > 0 ? `${s.teamWins} vundet, ${s.teamDraws ? `${s.teamDraws} uafgjort, ` : ''}${s.teamLosses} tabt${allSeasons ? ` i ${pluralize(data.seasons.length, 'sæson', 'sæsoner')}` : ''}` : 'Ingen spillet endnu'}
+            />
+            <Stat label="Vundne holdkampe" value={formatPct(s.teamWinPct)} sub={allSeasons ? 'Alle klubbens hold, alle sæsoner' : 'På tværs af alle klubbens hold'} accent />
             <Stat label="Spillere brugt" value={s.players} sub={s.multiTeamPlayers > 0 ? `${s.multiTeamPlayers} har spillet for flere hold` : 'Alle på ét hold'} />
           </div>
 
-          <Card title={`Holdene i ${seasonLabel(shownSeason)}`} subtitle="Bedste række øverst. Klik på rækken for stillingen i puljen.">
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Hold</th>
-                    <th>Række</th>
-                    <th>Placering</th>
-                    <th className="r hide-sm">Kampe</th>
-                    <th>V–U–T</th>
-                    <th className="r hide-sm">Point</th>
-                    <th>Form</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.teams.map((t) => (
-                    <TeamRow key={t.team.slug} t={t} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+          {allSeasons ? (
+            <Card title="Holdene gennem alle sæsoner" subtitle="Hvert hold klubben har stillet, med de rækker det har spillet i, den bedste placering og det samlede resultat. Bedste nuværende række øverst.">
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Hold</th>
+                      <th>Sæsoner</th>
+                      <th>Rækker (sæsoner)</th>
+                      <th>Bedste placering</th>
+                      <th className="r hide-sm">Kampe</th>
+                      <th>V–U–T</th>
+                      <th className="r">Vundet</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.teamsAllTime.map((t) => (
+                      <AllTimeTeamRow key={t.team.slug} t={t} onSeason={(id) => setSeason(id)} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ) : (
+            <Card title={`Holdene i ${seasonLabel(shownSeason)}`} subtitle="Bedste række øverst. Klik på rækken for stillingen i puljen.">
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Hold</th>
+                      <th>Række</th>
+                      <th>Placering</th>
+                      <th className="r hide-sm">Kampe</th>
+                      <th>V–U–T</th>
+                      <th className="r hide-sm">Point</th>
+                      <th>Form</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.teams.map((t) => (
+                      <TeamRow key={t.team.slug} t={t} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
 
           <div className="grid grid-main">
             <div className="stack">
               <Card
                 title="Flest holdkampe"
-                subtitle={playerScope === 'season' ? `Spillere sorteret efter antal holdkampe for klubben i ${seasonLabel(shownSeason)}.` : 'Spillere sorteret efter antal holdkampe for klubben i alle sæsoner i data.'}
+                subtitle={
+                  allSeasons || playerScope === 'all'
+                    ? 'Spillere sorteret efter antal holdkampe for klubben i alle sæsoner i data.'
+                    : `Spillere sorteret efter antal holdkampe for klubben i ${seasonLabel(shownSeason)}.`
+                }
                 actions={
-                  <div className="tabs" role="tablist" aria-label="Periode">
-                    <button type="button" role="tab" aria-selected={playerScope === 'season'} className={playerScope === 'season' ? 'active' : ''} onClick={() => setPlayerScope('season')}>
-                      Denne sæson
-                    </button>
-                    <button type="button" role="tab" aria-selected={playerScope === 'all'} className={playerScope === 'all' ? 'active' : ''} onClick={() => setPlayerScope('all')}>
-                      Alle sæsoner
-                    </button>
-                  </div>
+                  !allSeasons && (
+                    <div className="tabs" role="tablist" aria-label="Periode">
+                      <button type="button" role="tab" aria-selected={playerScope === 'season'} className={playerScope === 'season' ? 'active' : ''} onClick={() => setPlayerScope('season')}>
+                        Denne sæson
+                      </button>
+                      <button type="button" role="tab" aria-selected={playerScope === 'all'} className={playerScope === 'all' ? 'active' : ''} onClick={() => setPlayerScope('all')}>
+                        Alle sæsoner
+                      </button>
+                    </div>
+                  )
                 }
               >
                 {players.length === 0 ? (
                   <p className="text-2">Ingen spillere registreret endnu.</p>
                 ) : (
                   <>
-                    <PlayerRows players={visiblePlayers} seasonId={shownSeason} showTeams={playerScope === 'season'} />
+                    <PlayerRows players={visiblePlayers} seasonId={shownSeason} showTeams={!allSeasons && playerScope === 'season'} />
                     {players.length > 12 && (
                       <button type="button" className="btn btn-sm" style={{ marginTop: '0.8rem' }} onClick={() => setShowAllPlayers((v) => !v)}>
                         {showAllPlayers ? 'Vis færre' : `Vis alle ${players.length}`}
@@ -222,7 +310,7 @@ export function ClubPage() {
                 )}
               </Card>
 
-              <Card title="Holdene gennem sæsonerne" subtitle="Hvilke rækker klubbens hold har spillet i, og hvor de endte.">
+              <Card title="Holdene sæson for sæson" subtitle="Hvilke rækker klubbens hold har spillet i, og hvor de endte. Klik på en sæson for at se den.">
                 <div className="table-wrap">
                   <table className="table table-compact">
                     <thead>
@@ -269,7 +357,7 @@ export function ClubPage() {
             <div className="stack">
               <Card
                 title="Seneste holdkampe"
-                subtitle="Alle klubbens hold, nyeste øverst."
+                subtitle={allSeasons ? 'Alle klubbens hold, nyeste øverst, på tværs af sæsoner.' : 'Alle klubbens hold, nyeste øverst.'}
                 actions={
                   data.matches.length > 10 && (
                     <button type="button" className="btn btn-sm" onClick={() => setShowAllMatches((v) => !v)}>

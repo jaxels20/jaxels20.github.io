@@ -91,11 +91,11 @@ export function useClub(slug: string | undefined, season: number | null) {
   })
 }
 
-export function useClubs(season: number | null) {
+export function useClubs(season: number | null, enabled = true) {
   return useQuery({
     queryKey: ['clubs', season],
     queryFn: () => getJson<ClubIndex>('/clubs', { season }),
-    enabled: season !== null,
+    enabled,
     staleTime: STALE,
   })
 }
