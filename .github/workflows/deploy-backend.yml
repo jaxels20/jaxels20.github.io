@@ -1,0 +1,58 @@
+name: Deploy backend to server
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "sql/**"
+      - "deploy/**"
+      - "*.py"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST || '178.104.193.12' }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER || 'root' }}
+    steps:
+      - name: Prepare SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::Missing repository secret DEPLOY_SSH_KEY (see DEPLOYMENT.md)"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Pull and rebuild on server
+        run: |
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<'REMOTE'
+            set -euo pipefail
+            cd /root/jaxels20.github.io
+            git fetch --quiet origin main
+            git reset --hard --quiet origin/main
+            cd deploy
+            docker compose --env-file .env up -d --build --remove-orphans
+            docker image prune -f >/dev/null
+            for i in $(seq 1 20); do
+              if docker compose --env-file .env exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)" 2>/dev/null; then
+                echo "backend healthy"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "backend did not become healthy"
+            docker compose --env-file .env logs --tail=50 backend
+            exit 1
+          REMOTE

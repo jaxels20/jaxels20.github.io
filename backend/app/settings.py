@@ -12,6 +12,8 @@ DEFAULT_CORS_ORIGINS = (
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://jaxels20.github.io",
+    "https://badmintonintelligence.dk",
+    "https://www.badmintonintelligence.dk",
 )
 
 

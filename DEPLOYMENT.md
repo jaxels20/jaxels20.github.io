@@ -1,14 +1,32 @@
-# Production Deployment (Droplet backend + GitHub Pages frontend)
+# Production Deployment (server backend + GitHub Pages frontend)
 
-This setup serves the frontend on GitHub Pages and runs API + database on your Droplet.
+This setup serves the frontend on GitHub Pages and runs API + database on a small Hetzner Cloud server (Ubuntu, 2 vCPU / 4 GB).
 
-- Frontend: `https://jaxels20.github.io/`
-- Backend API: `https://api.81.27.108.148.sslip.io/api`
-- Database: PostgreSQL in Docker on the Droplet
+- Frontend: `https://badmintonintelligence.dk/`
+- Backend API: `https://api.badmintonintelligence.dk/api`
+- Database: PostgreSQL in Docker on the server
+- Server: `178.104.193.12` (Hetzner, Nuremberg), repo checked out at `/root/jaxels20.github.io`
 
-## 1) Prepare the Droplet
+## Automatic deployment on push
 
-Use Ubuntu 22.04+ and open only ports `22`, `80`, and `443`.
+Both halves redeploy automatically when `main` is pushed:
+
+- `.github/workflows/deploy-pages.yml` rebuilds the frontend and publishes it to GitHub Pages when anything under `frontend/` changes.
+- `.github/workflows/deploy-backend.yml` SSHes into the server, fast-forwards the checkout to `origin/main`, runs `docker compose up -d --build`, and waits for the API health check, when anything under `backend/`, `sql/`, `deploy/`, or the root `*.py` scripts changes. It can also be run by hand from the Actions tab.
+
+The backend workflow needs one repository secret, `DEPLOY_SSH_KEY`: the private half of a dedicated deploy key whose public half is in `/root/.ssh/authorized_keys` on the server. Set it with:
+
+```bash
+gh secret set DEPLOY_SSH_KEY < path/to/deploy_key
+```
+
+Optional repository variables `DEPLOY_HOST` and `DEPLOY_USER` override the server address and login user.
+
+Data is **not** reloaded on deploy. To refresh a season, run the `refresh_season_data.py` command from step 4 on the server, or `--skip-collect` to reload from the committed CSVs.
+
+## 1) Prepare the server
+
+Use Ubuntu 22.04+ and open only ports `22`, `80`, and `443` (Hetzner Cloud Firewall or `ufw`).
 
 Install Docker + Compose plugin:
 
@@ -40,8 +58,8 @@ Minimum values to set:
 
 - `POSTGRES_PASSWORD`
 - `PGPASSWORD` (same value as `POSTGRES_PASSWORD`)
-- `API_DOMAIN=api.81.27.108.148.sslip.io`
-- `BADMINTON_CORS_ORIGINS=https://jaxels20.github.io`
+- `API_DOMAIN=api.badmintonintelligence.dk`
+- `BADMINTON_CORS_ORIGINS=https://badmintonintelligence.dk,https://www.badmintonintelligence.dk`
 
 ## 3) Start database + backend + HTTPS reverse proxy
 
@@ -61,7 +79,7 @@ This starts:
 Check backend health:
 
 ```bash
-curl https://api.81.27.108.148.sslip.io/api/health
+curl https://api.badmintonintelligence.dk/api/health
 ```
 
 Expected:
@@ -73,7 +91,7 @@ Expected:
 ## 4) Bootstrap and refresh data warehouse
 
 The backend container reads CSVs from `badminton_export/` in the repository.
-Make sure those files exist on the Droplet before running refresh:
+They are committed, so a fresh clone already has them:
 
 ```bash
 ls badminton_export/season_2025_all_groups_team_matches.csv
@@ -89,10 +107,11 @@ docker compose --env-file .env run --rm backend \
   --db-host db \
   --db-port 5432 \
   --db-user postgres \
-  --psql-bin psql
+  --psql-bin psql \
+  --skip-collect
 ```
 
-Run the same command with a different `--year` for additional seasons.
+`--skip-collect` loads the committed CSVs instead of re-downloading from badmintonplayer.dk. Run the same command with a different `--year` for additional seasons.
 
 ## 5) Configure GitHub Pages deployment
 
@@ -103,13 +122,30 @@ In GitHub repository settings:
 1. Go to **Settings -> Pages** and set **Source** to **GitHub Actions**.
 2. Go to **Settings -> Secrets and variables -> Actions -> Variables**.
 3. Add repository variable:
-   - `VITE_API_BASE_URL=https://api.81.27.108.148.sslip.io/api`
+   - `VITE_API_BASE_URL=https://api.badmintonintelligence.dk/api`
 
 Push to `main` to trigger deployment.
 
 Frontend will be available at:
 
-- `https://jaxels20.github.io/`
+- `https://badmintonintelligence.dk/`
+
+## 5b) Custom domain DNS
+
+The site runs on `badmintonintelligence.dk`. Add these records at the DNS provider (one.com by default):
+
+| Type  | Name  | Value                  |
+|-------|-------|------------------------|
+| A     | `@`   | `185.199.108.153`      |
+| A     | `@`   | `185.199.109.153`      |
+| A     | `@`   | `185.199.110.153`      |
+| A     | `@`   | `185.199.111.153`      |
+| CNAME | `www` | `jaxels20.github.io`   |
+| A     | `api` | server public IP      |
+
+Then in GitHub **Settings -> Pages**, set **Custom domain** to `badmintonintelligence.dk` and enable **Enforce HTTPS** once the DNS check passes.
+
+The `api` record must resolve directly to the server (not through a CDN proxy) so Caddy can complete the Let's Encrypt challenge.
 
 ## 6) Ongoing operations
 

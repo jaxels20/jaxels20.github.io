@@ -28,7 +28,7 @@ services:
       BADMINTON_DB_PORT: ${BADMINTON_DB_PORT:-5432}
       BADMINTON_DB_USER: ${BADMINTON_DB_USER:-postgres}
       BADMINTON_PSQL_BIN: ${BADMINTON_PSQL_BIN:-psql}
-      BADMINTON_CORS_ORIGINS: ${BADMINTON_CORS_ORIGINS:-https://jaxels20.github.io}
+      BADMINTON_CORS_ORIGINS: ${BADMINTON_CORS_ORIGINS:-https://badmintonintelligence.dk,https://www.badmintonintelligence.dk}
       PGPASSWORD: ${PGPASSWORD:?PGPASSWORD is required}
       PORT: 8000
     volumes:
