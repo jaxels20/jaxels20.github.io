@@ -441,11 +441,11 @@ def optimise(
                     "slot": f"{i}. {category}",
                     "ours": [{**player_entity(by_id[pid]["name"], pid), "rating": round(by_id[pid]["ratings"][key][0]),
                               "matches": by_id[pid]["ratings"][key][1], "youth": by_id[pid]["youth"],
-                              "unusual": pid in unit.get("unusual", [])} for pid in unit["ids"]],
+                              "points": pts(pid, key), "unusual": pid in unit.get("unusual", [])} for pid in unit["ids"]],
                     "ourRating": round(unit["rating"]),
                     "ourPoints": unit["points"],
                     "theirs": [{**player_entity(op["name"], op["id"]), "rating": round(_rating(ratings, op["id"], key)[0]),
-                                "matches": _rating(ratings, op["id"], key)[1]} for op in ops],
+                                "matches": _rating(ratings, op["id"], key)[1], "points": pts(op["id"], key)} for op in ops],
                     "theirRating": round(strength),
                     "pWin": round(p_win, 3),
                 })
@@ -485,5 +485,5 @@ def optimise(
         "candidates": top,
         "excluded": excluded,
         "notes": notes,
-        "model": "Elo pr. spiller og disciplin fra alle ligakampe i data; par tæller som gennemsnittet. Discipliner med få kampe læner sig op ad spillerens øvrige discipliner. Spillere sættes i de discipliner, de normalt spiller, medmindre et skift tydeligt giver flere sejre. 1500 er en gennemsnitlig Danmarksserie-spiller.",
+        "model": "Styrken vurderes ud fra alle ligakampe i data, og spillere sættes i de discipliner, de normalt spiller. Tallet ved navnet er ranglistepoint i den pågældende disciplin.",
     }

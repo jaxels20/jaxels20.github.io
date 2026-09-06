@@ -553,7 +553,7 @@ export type LineupPoints = {
   >
 }
 
-export type OptimisePlayer = Entity & { rating: number; matches: number; youth?: boolean; unusual?: boolean }
+export type OptimisePlayer = Entity & { rating: number; matches: number; points: number; youth?: boolean; unusual?: boolean }
 
 export type OptimiseDetail = {
   slot: string

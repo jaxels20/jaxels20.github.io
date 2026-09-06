@@ -161,37 +161,22 @@ export function LineupPage() {
   const [optimiseError, setOptimiseError] = useState<string | null>(null)
   const [chosenCandidate, setChosenCandidate] = useState(0)
 
-  const runOptimiser = async () => {
-    if (!setup || !format || !opponentSlug) return
-    setOptimising(true)
-    setOptimiseError(null)
-    try {
-      const sex: Record<string, 'M' | 'F'> = {}
-      for (const [id, value] of Object.entries(sexOverride)) sex[id] = value
-      const result = await optimiseLineup({
-        team: setup.team.slug,
-        opponent: opponentSlug,
-        available: [...available],
-        matches: format.matches,
-        sex,
-      })
-      setOptimised(result)
-      setChosenCandidate(0)
-    } catch (err) {
-      setOptimiseError(err instanceof Error ? err.message : 'Beregningen fejlede.')
-    } finally {
-      setOptimising(false)
-    }
+  const applyCandidate = (slotsToApply: Record<string, number[]>) => {
+    setParams(
+      (prev) => {
+        const copy = new URLSearchParams(prev)
+        for (const slot of slotsFor(13)) copy.delete(slot.key.toLowerCase())
+        for (const [key, ids] of Object.entries(slotsToApply)) copy.set(key.toLowerCase(), ids.join(','))
+        return copy
+      },
+      { replace: true },
+    )
   }
 
-  const applyCandidate = (slotsToApply: Record<string, number[]>) => {
-    setParams((prev) => {
-      const copy = new URLSearchParams(prev)
-      for (const slot of slotsFor(13)) copy.delete(slot.key.toLowerCase())
-      for (const [key, ids] of Object.entries(slotsToApply)) copy.set(key.toLowerCase(), ids.join(','))
-      return copy
-    })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  const chooseCandidate = (index: number) => {
+    setChosenCandidate(index)
+    const candidate = optimised?.candidates[index]
+    if (candidate) applyCandidate(candidate.slots)
   }
 
   const setSlot = (slot: SlotSpec, position: number, id: number | null) => {
@@ -226,6 +211,30 @@ export function LineupPage() {
 
   const chooseTeam = (slug: string) => {
     setParams(() => new URLSearchParams({ hold: slug }))
+  }
+
+  const runOptimiser = async () => {
+    if (!setup || !format || !opponentSlug) return
+    setOptimising(true)
+    setOptimiseError(null)
+    try {
+      const sex: Record<string, 'M' | 'F'> = {}
+      for (const [id, value] of Object.entries(sexOverride)) sex[id] = value
+      const result = await optimiseLineup({
+        team: setup.team.slug,
+        opponent: opponentSlug,
+        available: [...available],
+        matches: format.matches,
+        sex,
+      })
+      setOptimised(result)
+      setChosenCandidate(0)
+      if (result.candidates[0]) applyCandidate(result.candidates[0].slots)
+    } catch (err) {
+      setOptimiseError(err instanceof Error ? err.message : 'Beregningen fejlede.')
+    } finally {
+      setOptimising(false)
+    }
   }
 
   const usedCount = useMemo(() => {
@@ -325,65 +334,6 @@ export function LineupPage() {
 
           <div className="grid grid-main lineup-grid">
             <div className="stack">
-              <Card title="Opstilling" subtitle="Rækkefølgen følger det officielle holdskema. Point i parentes er for den pågældende rangliste.">
-                {(['MD', 'DS', 'HS', 'DD', 'HD'] as const).map((category) => (
-                  <div className="lineup-category" key={category}>
-                    <h3>{CATEGORY_NAMES[category]}</h3>
-                    {slots
-                      .filter((s) => s.category === category)
-                      .map((slot) => {
-                        const flagged = issues.some((i) => i.severity === 'error' && i.slots?.includes(slot.key))
-                        const key = pointsKeyFor(slot.category)
-                        const sum = (assignment[slot.key] ?? []).reduce((acc, p) => acc + (p?.points?.[key] ?? 0), 0)
-                        const complete = (assignment[slot.key] ?? []).every(Boolean)
-                        return (
-                          <div className={`lineup-slot ${flagged ? 'flagged' : ''}`.trim()} key={slot.key}>
-                            <span className="lineup-slot-label">{slotLabel(slot)}</span>
-                            <div className="lineup-slot-fields">
-                              {Array.from({ length: slot.size }, (_, i) => {
-                                const current = rawAssignment[slot.key]?.[i] ?? 0
-                                const need = sexAllowed(slot.category, i)
-                                return (
-                                  <select
-                                    key={i}
-                                    className="select"
-                                    value={current || ''}
-                                    aria-label={`${slotLabel(slot)} ${slot.size === 2 ? (i === 0 ? 'første spiller' : 'anden spiller') : ''}`}
-                                    onChange={(e) => setSlot(slot, i, e.target.value ? Number(e.target.value) : null)}
-                                  >
-                                    <option value="">{need === 'M' ? 'Vælg herre' : 'Vælg dame'}</option>
-                                    {optionsFor(slot, i).map((o) => (
-                                      <option key={o.id} value={o.id}>
-                                        {o.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                )
-                              })}
-                            </div>
-                            <span className="lineup-slot-points num">{complete && sum > 0 ? formatNumber(sum) : ''}</span>
-                          </div>
-                        )
-                      })}
-                  </div>
-                ))}
-              </Card>
-
-              <Card title="Regeltjek" subtitle={`${issues.filter((i) => i.severity === 'error').length} fejl · ${issues.filter((i) => i.severity === 'warning').length} advarsler`}>
-                {issues.length === 0 ? (
-                  <p className="text-2">Ingen problemer fundet.</p>
-                ) : (
-                  <ul className="issue-list">
-                    {issues.map((issue, i) => (
-                      <li key={i} className={`issue issue-${issue.severity}`}>
-                        <span className="issue-rule">{issue.rule}</span>
-                        <span>{issue.message}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-
               <Card
                 title="Bedste opstilling mod en modstander"
                 subtitle="Finder den lovlige opstilling med flest forventede vundne kampe mod modstanderens seneste opstilling. Bruger de spillere, der er markeret til rådighed."
@@ -445,7 +395,7 @@ export function LineupPage() {
 
                     <div className="tabs" role="tablist" aria-label="Forslag">
                       {optimised.candidates.map((c, i) => (
-                        <button key={i} type="button" role="tab" aria-selected={chosenCandidate === i} className={chosenCandidate === i ? 'active' : ''} onClick={() => setChosenCandidate(i)}>
+                        <button key={i} type="button" role="tab" aria-selected={chosenCandidate === i} className={chosenCandidate === i ? 'active' : ''} onClick={() => chooseCandidate(i)}>
                           Forslag {i + 1} · {c.expectedWins.toLocaleString('da-DK', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} sejre
                         </button>
                       ))}
@@ -461,9 +411,10 @@ export function LineupPage() {
                               <span className="muted" style={{ fontSize: '1rem' }}> af {optimised.format.matches}</span>
                             </div>
                           </div>
-                          <button type="button" className="btn" onClick={() => applyCandidate(optimised.candidates[chosenCandidate].slots)}>
-                            Brug denne opstilling
-                          </button>
+                          <p className="note" style={{ maxWidth: '36ch' }}>
+                            Forslaget er sat ind i opstillingen nedenfor, og regeltjekket gælder det. Vælg et andet forslag for at
+                            skifte, eller ret enkelte pladser i opstillingen.
+                          </p>
                         </div>
                         <div className="table-wrap">
                           <table className="table table-compact">
@@ -484,14 +435,9 @@ export function LineupPage() {
                                       <span key={o.slug}>
                                         {i > 0 && ' / '}
                                         <PlayerLink player={o} />
-                                        <span
-                                          className="dim"
-                                          style={{ fontWeight: 400 }}
-                                          title={`Styrke ${o.rating} i ${row.slot.split('. ')[1]} efter ${o.matches} ${o.matches === 1 ? 'kamp' : 'kampe'} i den disciplin`}
-                                        >
+                                        <span className="dim num" style={{ fontWeight: 400 }} title="Ranglistepoint i denne disciplin">
                                           {' '}
-                                          {o.rating}
-                                          {o.matches < 5 ? '?' : ''}
+                                          {o.points ? formatNumber(o.points) : '–'}
                                         </span>
                                         {o.unusual && (
                                           <span className="chip" style={{ marginLeft: 4 }} title="Spiller normalt ikke denne disciplin ifølge kampdata">
@@ -510,18 +456,14 @@ export function LineupPage() {
                                         <span key={t.slug}>
                                           {i > 0 && ' / '}
                                           <PlayerLink player={t} />
-                                          <span
-                                            className="dim"
-                                            title={`Styrke ${t.rating} i ${row.slot.split('. ')[1]} efter ${t.matches} ${t.matches === 1 ? 'kamp' : 'kampe'} i den disciplin`}
-                                          >
+                                          <span className="dim num" title="Ranglistepoint i denne disciplin">
                                             {' '}
-                                            {t.rating}
-                                            {t.matches < 5 ? '?' : ''}
+                                            {t.points ? formatNumber(t.points) : '–'}
                                           </span>
                                         </span>
                                       ))
                                     ) : (
-                                      <span className="dim">ukendt · {row.theirRating}</span>
+                                      <span className="dim">ukendt</span>
                                     )}
                                   </td>
                                 </tr>
@@ -530,17 +472,75 @@ export function LineupPage() {
                           </table>
                         </div>
                         <p className="note">
-                          Tallet efter navnet er styrken i netop den disciplin, og ? betyder under 5 ligakampe i den disciplin i data;
-                          spilleren kan sagtens have mange kampe i andre discipliner, som styrken så læner sig op ad. Hold musen over
-                          tallet for antallet. Spillere sættes i de discipliner, de normalt spiller; "ny disciplin" markerer, at
-                          forslaget flytter en spiller til noget uvant, fordi det tydeligt giver flere sejre. Sejrschancen er beregnet
-                          ud fra styrkeforskellen, og modstanderens opstilling er et gæt.
+                          Tallet ved navnet er ranglistepoint i den pågældende disciplin. Spillere sættes i de discipliner, de
+                          normalt spiller; "ny disciplin" markerer, at forslaget flytter en spiller til noget uvant, fordi det tydeligt
+                          giver flere sejre. Sejrschancen bygger på holdenes ligakampe i data, og modstanderens opstilling er et gæt.
                         </p>
                       </>
                     )}
                   </div>
                 )}
               </Card>
+
+              <Card title="Opstilling" subtitle="Rækkefølgen følger det officielle holdskema. Point i parentes er for den pågældende rangliste.">
+                {(['MD', 'DS', 'HS', 'DD', 'HD'] as const).map((category) => (
+                  <div className="lineup-category" key={category}>
+                    <h3>{CATEGORY_NAMES[category]}</h3>
+                    {slots
+                      .filter((s) => s.category === category)
+                      .map((slot) => {
+                        const flagged = issues.some((i) => i.severity === 'error' && i.slots?.includes(slot.key))
+                        const key = pointsKeyFor(slot.category)
+                        const sum = (assignment[slot.key] ?? []).reduce((acc, p) => acc + (p?.points?.[key] ?? 0), 0)
+                        const complete = (assignment[slot.key] ?? []).every(Boolean)
+                        return (
+                          <div className={`lineup-slot ${flagged ? 'flagged' : ''}`.trim()} key={slot.key}>
+                            <span className="lineup-slot-label">{slotLabel(slot)}</span>
+                            <div className="lineup-slot-fields">
+                              {Array.from({ length: slot.size }, (_, i) => {
+                                const current = rawAssignment[slot.key]?.[i] ?? 0
+                                const need = sexAllowed(slot.category, i)
+                                return (
+                                  <select
+                                    key={i}
+                                    className="select"
+                                    value={current || ''}
+                                    aria-label={`${slotLabel(slot)} ${slot.size === 2 ? (i === 0 ? 'første spiller' : 'anden spiller') : ''}`}
+                                    onChange={(e) => setSlot(slot, i, e.target.value ? Number(e.target.value) : null)}
+                                  >
+                                    <option value="">{need === 'M' ? 'Vælg herre' : 'Vælg dame'}</option>
+                                    {optionsFor(slot, i).map((o) => (
+                                      <option key={o.id} value={o.id}>
+                                        {o.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )
+                              })}
+                            </div>
+                            <span className="lineup-slot-points num">{complete && sum > 0 ? formatNumber(sum) : ''}</span>
+                          </div>
+                        )
+                      })}
+                  </div>
+                ))}
+              </Card>
+
+              <Card title="Regeltjek" subtitle={`${issues.filter((i) => i.severity === 'error').length} fejl · ${issues.filter((i) => i.severity === 'warning').length} advarsler`}>
+                {issues.length === 0 ? (
+                  <p className="text-2">Ingen problemer fundet.</p>
+                ) : (
+                  <ul className="issue-list">
+                    {issues.map((issue, i) => (
+                      <li key={i} className={`issue issue-${issue.severity}`}>
+                        <span className="issue-rule">{issue.rule}</span>
+                        <span>{issue.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+
             </div>
 
             <div className="stack">
