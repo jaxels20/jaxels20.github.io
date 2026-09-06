@@ -8,7 +8,7 @@ from ..settings import Settings, get_settings
 from .common import NotFound, cached, clear_cache, individual_cursor, player_entity, slugify
 from .compare import player_comparison, team_head_to_head
 from .leaderboards import leaderboards
-from .lineup import lineup_points, lineup_setup
+from .lineup import club_setup, lineup_points, lineup_setup
 from .optimiser import optimise
 from .leagues import group_detail, list_leagues, list_seasons, match_detail
 from .players import player_profile, resolve_player
@@ -144,8 +144,14 @@ def lineup_setup_endpoint(team: str = Query(min_length=1), settings: Settings = 
     return _run(f"lineup:{team}", lambda: lineup_setup(settings, team))
 
 
+@router.get("/lineup/club")
+def lineup_club_endpoint(team: str = Query(min_length=1), settings: Settings = Depends(get_settings)) -> dict[str, Any]:
+    """All teams of a club with formats, latest lineups and a pooled roster."""
+    return _run(f"lineup-club:{team}", lambda: club_setup(settings, team))
+
+
 @router.post("/lineup/points")
-def lineup_points_endpoint(ids: list[int] = Body(embed=True, max_length=60)) -> dict[str, Any]:
+def lineup_points_endpoint(ids: list[int] = Body(embed=True, max_length=150)) -> dict[str, Any]:
     """Current ranking points for up to 60 players, fetched from badmintonplayer.dk
     and cached per player for a day."""
     try:

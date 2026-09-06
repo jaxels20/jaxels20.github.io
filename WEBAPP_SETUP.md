@@ -76,6 +76,7 @@ player with that name.
 - `GET /api/v2/matches/{match_id}?season=<year>&group=<league_group_id>`
 - `GET /api/v2/leaderboards?season=<year>&division=<name>&min_matches=<n>` (omit `min_matches` to scale it to the season's progress)
 - `GET /api/v2/lineup/setup?team=<slug>` (roster with inferred sex, team format, club's higher team and its latest lineup)
+- `GET /api/v2/lineup/club?team=<slug>` (every active team of that team's club, ranked first team downwards, each with its format and latest lineup, plus one pooled roster; used to check all of a club's lineups in one round)
 - `POST /api/v2/lineup/points` with `{"ids": [...]}` (current ranking points for up to 60 players, cached a day each)
 - `POST /api/v2/lineup/optimise` with `{"team", "opponent", "available": [ids], "matches": 9|13, "sex": {id: "M"|"F"}}`:
   the legal lineup with the highest expected number of won matches against the opponent's latest

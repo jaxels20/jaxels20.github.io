@@ -527,23 +527,37 @@ export type LineupSetupPlayer = Entity & {
   disciplines: string[]
 }
 
+export type LineupLatest = {
+  matchId: number
+  seasonId: number
+  groupId: number
+  date: string
+  opponent: Entity
+  players: (Entity & { sex: 'M' | 'F' | null; slots: string[] })[]
+}
+
 export type LineupSetup = {
   team: Entity
   seasonId: number
   format: LineupFormat
   players: LineupSetupPlayer[]
-  higherTeam: {
-    team: Entity
-    lineup: {
-      matchId: number
-      seasonId: number
-      groupId: number
-      date: string
-      opponent: Entity
-      players: (Entity & { sex: 'M' | 'F' | null; slots: string[] })[]
-    } | null
-  } | null
+  higherTeam: { team: Entity; lineup: LineupLatest | null } | null
   otherTeams: Entity[]
+}
+
+export type LineupClubTeam = {
+  team: Entity
+  rank: number
+  seasonId: number
+  format: LineupFormat
+  latestLineup: LineupLatest | null
+}
+
+export type LineupClub = {
+  club: string
+  seasonId: number
+  teams: LineupClubTeam[]
+  players: LineupSetupPlayer[]
 }
 
 export type RankingListVersion = { name: string; published: string | null; validFrom: string; validTo: string | null }

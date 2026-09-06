@@ -303,3 +303,79 @@ export function verdict(issues: Issue[]): 'legal' | 'illegal' | 'incomplete' {
   if (issues.some((i) => i.severity === 'info' && i.rule === '§ 37')) return 'incomplete'
   return 'legal'
 }
+
+// --- whole-club checks (several teams entered for the same round) ---------------
+
+export type TeamEntry = { name: string; rank: number; format: Format; slots: SlotSpec[]; assignment: Assignment }
+
+/** The players of an entered lineup in the shape the §38 stk. 4 check expects. */
+export function higherFromAssignment(slots: SlotSpec[], assignment: Assignment): HigherTeamPlayer[] {
+  const map = new Map<number, HigherTeamPlayer>()
+  for (const slot of slots) {
+    for (const p of assignment[slot.key] ?? []) {
+      if (!p) continue
+      const entry = map.get(p.id) ?? { player: p, categories: [], slots: [] }
+      const key = pointsKeyFor(slot.category)
+      if (!entry.categories.includes(key)) entry.categories.push(key)
+      entry.slots.push(slotLabel(slot))
+      map.set(p.id, entry)
+    }
+  }
+  return [...map.values()]
+}
+
+export function filledSlots(slots: SlotSpec[], assignment: Assignment): number {
+  return slots.reduce((n, s) => n + (assignment[s.key] ?? []).filter(Boolean).length, 0)
+}
+
+export function slotCapacity(slots: SlotSpec[]): number {
+  return slots.reduce((n, s) => n + s.size, 0)
+}
+
+/** Rules that only apply across a club's teams in the same round. */
+export function checkClub(teams: TeamEntry[]): Issue[] {
+  const issues: Issue[] = []
+
+  // §38 stk. 6 and §45: one team per player per round.
+  const usage = new Map<number, { name: string; teams: string[] }>()
+  for (const t of teams) {
+    const seen = new Set<number>()
+    for (const slot of t.slots) {
+      for (const p of t.assignment[slot.key] ?? []) {
+        if (!p || seen.has(p.id)) continue
+        seen.add(p.id)
+        const entry = usage.get(p.id) ?? { name: p.name, teams: [] }
+        entry.teams.push(t.name)
+        usage.set(p.id, entry)
+      }
+    }
+  }
+  for (const entry of usage.values()) {
+    if (entry.teams.length > 1) {
+      issues.push({
+        severity: 'error',
+        rule: '§ 45',
+        message: `${entry.name} er sat på både ${entry.teams.join(' og ')}. En spiller må kun spille på ét hold i samme spillerunde.`,
+      })
+    }
+  }
+
+  // §38 stk. 1 c: teams are filled from the top.
+  const sorted = [...teams].sort((a, b) => a.rank - b.rank)
+  for (let i = 0; i < sorted.length; i++) {
+    const higher = sorted[i]
+    const filled = filledSlots(higher.slots, higher.assignment)
+    const capacity = slotCapacity(higher.slots)
+    if (filled === capacity || filled === 0) continue
+    for (const lower of sorted.slice(i + 1)) {
+      if (filledSlots(lower.slots, lower.assignment) === slotCapacity(lower.slots)) {
+        issues.push({
+          severity: 'warning',
+          rule: '§ 38 stk. 1 c',
+          message: `${higher.name} mangler ${capacity - filled} ${capacity - filled === 1 ? 'plads' : 'pladser'}, mens ${lower.name} er fuldt sat. Holdene skal fyldes op fra oven.`,
+        })
+      }
+    }
+  }
+  return issues
+}

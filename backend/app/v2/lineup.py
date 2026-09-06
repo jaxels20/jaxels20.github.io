@@ -247,10 +247,87 @@ def _points_one(player_id: int) -> dict[str, Any]:
 
 
 def lineup_points(player_ids: list[int]) -> dict[str, Any]:
-    ids = sorted({int(i) for i in player_ids})[:60]
+    ids = sorted({int(i) for i in player_ids})[:150]
     try:
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=6) as pool:
             results = list(pool.map(_points_one, ids))
     except Exception as exc:  # noqa: BLE001 - any failure talking to the source
         raise SourceUnavailable(str(exc)) from exc
     return {"seasonId": current_season(), "points": {str(r["id"]): r for r in results}, "rankingList": ranking_list_status()}
+
+
+def club_setup(settings: Settings, slug: str) -> dict[str, Any]:
+    """Every team of the club that `slug` belongs to, ranked first team downwards, with
+    each team's format and latest lineup, plus one pooled roster for the club."""
+    with individual_cursor(settings) as cur:
+        team = resolve_team(cur, slug)
+        base, _ = club_base(team["team_name"])
+        cur.execute(
+            "SELECT team_key, team_name FROM dim_team WHERE team_name = %(base)s OR team_name ~ %(pattern)s",
+            {"base": base, "pattern": rf"^{re.escape(base)} \d+$"},
+        )
+        club_teams = sorted(rows(cur), key=lambda r: club_base(r["team_name"])[1])
+
+        teams: list[dict[str, Any]] = []
+        roster: list[dict[str, Any]] = []
+        seasons_all: set[int] = set()
+        for t in club_teams:
+            cur.execute(
+                """
+                SELECT s.season_id, dv.division_name, count(DISTINCT f.match_id) AS team_matches
+                FROM fact_individual_match f
+                JOIN dim_season s ON s.season_key = f.season_key
+                JOIN dim_group g ON g.group_key = f.group_key
+                JOIN dim_division dv ON dv.division_key = g.division_key
+                WHERE f.home_team_key = %(k)s OR f.away_team_key = %(k)s
+                GROUP BY 1, 2 ORDER BY s.season_id DESC, team_matches DESC
+                """,
+                {"k": t["team_key"]},
+            )
+            history = rows(cur)
+            if not history:
+                continue
+            seasons_seen = sorted({h["season_id"] for h in history}, reverse=True)[:2]
+            seasons_all.update(seasons_seen)
+            for s_id in seasons_seen:
+                for r in _team_players(cur, t["team_key"], s_id):
+                    if not any(x["player_key"] == r["player_key"] for x in roster):
+                        roster.append({**r, "team": entity(t["team_name"]), "last_season": s_id})
+            teams.append(
+                {
+                    "team": entity(t["team_name"]),
+                    "rank": club_base(t["team_name"])[1],
+                    "seasonId": history[0]["season_id"],
+                    "format": team_format(history[0]["division_name"]),
+                    "latestLineup": _latest_lineup(cur, t["team_key"]),
+                }
+            )
+
+        keys = [r["player_key"] for r in roster]
+        for t in teams:
+            keys += [p["playerKey"] for p in (t["latestLineup"] or {}).get("players", [])]
+        sexes = _sex_map(cur, keys)
+
+    for t in teams:
+        for p in (t["latestLineup"] or {}).get("players", []):
+            p["sex"] = sexes.get(p.pop("playerKey"))
+
+    season = max(seasons_all) if seasons_all else current_season()
+    # A team that has not played for two seasons is not one the club fields any more.
+    teams = [t for t in teams if t["seasonId"] >= season - 1]
+    active = {t["team"]["slug"] for t in teams}
+    roster = [r for r in roster if r["team"]["slug"] in active]
+    players = [
+        {
+            **player_entity(r["player_name"], r["player_id"]),
+            "sex": sexes.get(r["player_key"]),
+            "team": r["team"],
+            "lastSeason": r["last_season"],
+            "teamMatches": r["team_matches"],
+            "matches": r["matches"],
+            "disciplines": sorted((r["codes"] or "").split(",")),
+        }
+        for r in roster
+    ]
+    players.sort(key=lambda p: (-(p["lastSeason"]), -(p["teamMatches"]), p["name"]))
+    return {"club": base, "seasonId": season, "teams": teams, "players": players}

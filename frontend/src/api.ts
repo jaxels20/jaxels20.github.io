@@ -4,6 +4,7 @@ import type {
   Entity,
   GroupDetail,
   Leaderboards,
+  LineupClub,
   LineupPoints,
   LineupSetup,
   OptimiseResult,
@@ -135,6 +136,15 @@ export function useLineupSetup(teamSlug: string | null) {
   return useQuery({
     queryKey: ['lineup-setup', teamSlug],
     queryFn: () => getJson<LineupSetup>('/lineup/setup', { team: teamSlug }),
+    enabled: Boolean(teamSlug),
+    staleTime: STALE,
+  })
+}
+
+export function useLineupClub(teamSlug: string | null) {
+  return useQuery({
+    queryKey: ['lineup-club', teamSlug],
+    queryFn: () => getJson<LineupClub>('/lineup/club', { team: teamSlug }),
     enabled: Boolean(teamSlug),
     staleTime: STALE,
   })
