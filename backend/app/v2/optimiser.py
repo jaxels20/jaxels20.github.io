@@ -210,7 +210,8 @@ def optimise(
     higher_players = []
     for hp in (higher_lineup or {}).get("players", []):
         cats = sorted({cats_of[s.split(". ")[1]] for s in hp["slots"] if s.split(". ")[1] in cats_of})
-        higher_players.append({"id": hp["id"], "name": hp["name"], "sex": higher_sex.get(hp.pop("playerKey", None)), "cats": cats})
+        higher_players.append({"id": hp["id"], "name": hp["name"], "sex": higher_sex.get(hp.pop("playerKey", None)),
+                               "cats": cats, "youth": youth(hp["id"])})
 
     men: list[dict[str, Any]] = []
     women: list[dict[str, Any]] = []
@@ -223,7 +224,9 @@ def optimise(
         if not youth(pid):
             blocker = None
             for hp in higher_players:
-                if hp["sex"] != sex or not hp["cats"]:
+                # §38 stk. 5: a comparison involving a U17/U19 player on either side is an
+                # assessment of strength, not a points test, so it cannot exclude anyone here.
+                if hp["sex"] != sex or not hp["cats"] or hp["youth"]:
                     continue
                 if not any(pts(pid, c) <= pts(hp["id"], c) + 50 for c in hp["cats"]):
                     blocker = hp
@@ -248,10 +251,21 @@ def optimise(
     need_men = counts["HS"] + counts["MD"] + 2 * counts["HD"]
     need_women = counts["DS"] + counts["MD"] + 2 * counts["DD"]
     notes: list[str] = []
+
+    def too_few(label: str, needed: int, have: int, sex: str) -> NotFound:
+        dropped = [e for e in excluded if e["player"]["id"] and (sex_override.get(e["player"]["id"]) or sexes.get(
+            next((p["player_key"] for p in players if p["player_id"] == e["player"]["id"]), None))) == sex]
+        message = f"Der skal være mindst {needed} {label} til rådighed; der er {have}."
+        if dropped:
+            message += " Udeladt: " + "; ".join(f"{e['player']['name']} ({e['reason']})" for e in dropped)
+        else:
+            message += " Marker flere spillere som til rådighed i spillerlisten."
+        return NotFound(message)
+
     if len(men) * MAX_PER_PLAYER < need_men or len(men) < 2 * counts["HD"]:
-        raise NotFound(f"Der skal være mindst {max(2 * counts['HD'], math.ceil(need_men / MAX_PER_PLAYER))} herrer til rådighed; der er {len(men)}.")
+        raise too_few("herrer", max(2 * counts["HD"], math.ceil(need_men / MAX_PER_PLAYER)), len(men), "M")
     if len(women) * MAX_PER_PLAYER < need_women or len(women) < 2 * counts["DD"]:
-        raise NotFound(f"Der skal være mindst {max(2 * counts['DD'], math.ceil(need_women / MAX_PER_PLAYER))} damer til rådighed; der er {len(women)}.")
+        raise too_few("damer", max(2 * counts["DD"], math.ceil(need_women / MAX_PER_PLAYER)), len(women), "F")
 
     # Opponent strength per slot from their latest lineup; unknown slots use their mean.
     opp_by_slot: dict[str, list[dict[str, Any]]] = {}
