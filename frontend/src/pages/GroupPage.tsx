@@ -42,7 +42,7 @@ export function GroupPage() {
                 <th className="r">V</th>
                 <th className="r">U</th>
                 <th className="r">T</th>
-                <th className="r">Kampe</th>
+                <th className="r hide-sm">Kampe</th>
                 <th className="r">Diff.</th>
                 <th className="r">Point</th>
               </tr>
@@ -60,7 +60,7 @@ export function GroupPage() {
                   <td className="r">{row.wins}</td>
                   <td className="r">{row.draws}</td>
                   <td className="r">{row.losses}</td>
-                  <td className="r dim">
+                  <td className="r dim hide-sm">
                     {row.disciplinesFor}–{row.disciplinesAgainst}
                   </td>
                   <td className="r">{formatSigned(row.disciplineDiff, 0)}</td>

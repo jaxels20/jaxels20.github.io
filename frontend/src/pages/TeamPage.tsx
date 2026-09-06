@@ -132,7 +132,7 @@ export function TeamPage() {
                         <th>Dato</th>
                         <th>Modstander</th>
                         <th>Resultat</th>
-                        <th>Række</th>
+                        <th className="hide-sm">Række</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -156,7 +156,7 @@ export function TeamPage() {
                             </strong>{' '}
                             {m.disciplinesWon}–{m.disciplinesLost}
                           </td>
-                          <td className="dim">{m.groupName}</td>
+                          <td className="dim hide-sm">{m.groupName}</td>
                         </tr>
                       ))}
                     </tbody>

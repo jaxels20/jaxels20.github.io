@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { useSeasons } from '../api'
 import { pathHasTitle } from '../hooks/usePageTitle'
 import { formatDate, formatDateTime } from '../lib/format'
 import { SearchBox } from './SearchBox'
+import { PageSkeleton } from './ui'
 
 function usePageTracking() {
   const location = useLocation()
@@ -84,7 +85,9 @@ export function AppShell() {
 
       <main className="main">
         <div className="container">
-          <Outlet />
+          <Suspense fallback={<PageSkeleton />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 

@@ -1,17 +1,21 @@
+import { lazy } from 'react'
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppShell } from './components/AppShell'
 import { usePageTitle } from './hooks/usePageTitle'
-import { GroupPage } from './pages/GroupPage'
 import { HomePage } from './pages/HomePage'
-import { LeaderboardsPage } from './pages/LeaderboardsPage'
-import { LeaguesPage } from './pages/LeaguesPage'
-import { LineupPage } from './pages/LineupPage'
-import { MatchPage } from './pages/MatchPage'
-import { PlayerComparePage } from './pages/PlayerComparePage'
-import { PlayerPage } from './pages/PlayerPage'
-import { TeamH2HPage } from './pages/TeamH2HPage'
-import { TeamPage } from './pages/TeamPage'
+
+// Every page but the front page loads on demand, so a phone only downloads the code
+// (and the chart library) for the page it actually opens.
+const GroupPage = lazy(() => import('./pages/GroupPage').then((m) => ({ default: m.GroupPage })))
+const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage').then((m) => ({ default: m.LeaderboardsPage })))
+const LeaguesPage = lazy(() => import('./pages/LeaguesPage').then((m) => ({ default: m.LeaguesPage })))
+const LineupPage = lazy(() => import('./pages/LineupPage').then((m) => ({ default: m.LineupPage })))
+const MatchPage = lazy(() => import('./pages/MatchPage').then((m) => ({ default: m.MatchPage })))
+const PlayerComparePage = lazy(() => import('./pages/PlayerComparePage').then((m) => ({ default: m.PlayerComparePage })))
+const PlayerPage = lazy(() => import('./pages/PlayerPage').then((m) => ({ default: m.PlayerPage })))
+const TeamH2HPage = lazy(() => import('./pages/TeamH2HPage').then((m) => ({ default: m.TeamH2HPage })))
+const TeamPage = lazy(() => import('./pages/TeamPage').then((m) => ({ default: m.TeamPage })))
 
 function NotFoundPage() {
   usePageTitle('Siden findes ikke')
