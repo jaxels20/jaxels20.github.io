@@ -96,17 +96,12 @@ export function AppShell() {
           <div>
             <strong style={{ color: 'var(--text-2)' }}>Badminton Intelligence</strong> · statistik for dansk holdbadminton
           </div>
-          <div>
-            Data fra Badminton Danmarks holdturnering (Badmintonligaen til Danmarksserien), sæson 2020/21 og frem.
-            Resultater hentes fra badmintonplayer.dk hver mandag.
-            {seasons?.dataUpdated && (
-              <>
-                <br />
-                Data opdateret {formatDateTime(seasons.dataUpdated)}
-                {seasons.latestMatch && <> · seneste spillede kamp {formatDate(seasons.latestMatch)}</>}
-              </>
-            )}
-          </div>
+          {seasons?.dataUpdated && (
+            <div>
+              Data opdateret {formatDateTime(seasons.dataUpdated)}
+              {seasons.latestMatch && <> · seneste spillede kamp {formatDate(seasons.latestMatch)}</>}
+            </div>
+          )}
         </div>
       </footer>
     </div>
