@@ -46,6 +46,7 @@ const NAV = [
   { to: '/toplister', label: 'Toplister' },
   { to: '/hold-mod-hold', label: 'Hold mod hold' },
   { to: '/spiller-mod-spiller', label: 'Spiller mod spiller' },
+  { to: '/holdopstilling', label: 'Holdopstilling', beta: true },
 ]
 
 export function AppShell() {
@@ -69,6 +70,7 @@ export function AppShell() {
             {NAV.map((item) => (
               <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? 'active' : '')}>
                 {item.label}
+                {'beta' in item && item.beta && <span className="nav-beta">beta</span>}
               </NavLink>
             ))}
           </nav>

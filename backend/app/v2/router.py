@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from ..settings import Settings, get_settings
 from .common import NotFound, cached, clear_cache, individual_cursor, player_entity, slugify
 from .compare import player_comparison, team_head_to_head
 from .leaderboards import leaderboards
+from .lineup import lineup_points, lineup_setup
 from .leagues import group_detail, list_leagues, list_seasons, match_detail
 from .players import player_profile, resolve_player
 from .ranking import SourceUnavailable, player_ranking
@@ -134,6 +135,22 @@ def leaderboard(
         f"leaderboards:{season}:{division}:{min_matches}",
         lambda: leaderboards(settings, season, division, min_matches),
     )
+
+
+@router.get("/lineup/setup")
+def lineup_setup_endpoint(team: str = Query(min_length=1), settings: Settings = Depends(get_settings)) -> dict[str, Any]:
+    """Roster, format and the club's higher team for the lineup checker."""
+    return _run(f"lineup:{team}", lambda: lineup_setup(settings, team))
+
+
+@router.post("/lineup/points")
+def lineup_points_endpoint(ids: list[int] = Body(embed=True, max_length=60)) -> dict[str, Any]:
+    """Current ranking points for up to 60 players, fetched from badmintonplayer.dk
+    and cached per player for a day."""
+    try:
+        return lineup_points(ids)
+    except SourceUnavailable as exc:
+        raise HTTPException(status_code=503, detail="Kunne ikke hente point fra badmintonplayer.dk") from exc
 
 
 @router.post("/cache/clear", include_in_schema=False)

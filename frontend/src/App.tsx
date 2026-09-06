@@ -6,6 +6,7 @@ import { GroupPage } from './pages/GroupPage'
 import { HomePage } from './pages/HomePage'
 import { LeaderboardsPage } from './pages/LeaderboardsPage'
 import { LeaguesPage } from './pages/LeaguesPage'
+import { LineupPage } from './pages/LineupPage'
 import { MatchPage } from './pages/MatchPage'
 import { PlayerComparePage } from './pages/PlayerComparePage'
 import { PlayerPage } from './pages/PlayerPage'
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/ligaer/:season/:groupId" element={<GroupPage />} />
         <Route path="/kampe/:season/:groupId/:matchId" element={<MatchPage />} />
         <Route path="/toplister" element={<LeaderboardsPage />} />
+        <Route path="/holdopstilling" element={<LineupPage />} />
         <Route path="/teams" element={<Navigate to="/" replace />} />
         <Route path="/players" element={<Navigate to="/" replace />} />
         <Route path="/head-to-head" element={<Navigate to="/hold-mod-hold" replace />} />

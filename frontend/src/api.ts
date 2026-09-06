@@ -4,6 +4,8 @@ import type {
   Entity,
   GroupDetail,
   Leaderboards,
+  LineupPoints,
+  LineupSetup,
   LeaguesResponse,
   MatchDetail,
   PlayerComparison,
@@ -125,6 +127,35 @@ export function useResolveEntity(kind: 'team' | 'player', slug: string | null, e
     enabled: enabled && Boolean(slug),
     staleTime: Infinity,
     retry: false,
+  })
+}
+
+export function useLineupSetup(teamSlug: string | null) {
+  return useQuery({
+    queryKey: ['lineup-setup', teamSlug],
+    queryFn: () => getJson<LineupSetup>('/lineup/setup', { team: teamSlug }),
+    enabled: Boolean(teamSlug),
+    staleTime: STALE,
+  })
+}
+
+/** Ranking points for a set of players, POSTed as one batch. */
+export function useLineupPoints(ids: number[]) {
+  const sorted = [...new Set(ids)].sort((a, b) => a - b)
+  return useQuery({
+    queryKey: ['lineup-points', sorted],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE}/lineup/points`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: sorted }),
+      })
+      if (!response.ok) throw new ApiError(response.status, 'Kunne ikke hente ranglistepoint')
+      return (await response.json()) as LineupPoints
+    },
+    enabled: sorted.length > 0,
+    staleTime: 60 * 60 * 1000,
+    retry: 1,
   })
 }
 

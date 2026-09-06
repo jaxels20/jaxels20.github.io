@@ -507,3 +507,43 @@ export type PlayerRanking = {
   lists: RankingList[]
   levels: { seasonId: number; level: number }[]
 }
+
+export type LineupFormat = {
+  matches: 9 | 13
+  minMen: number
+  minWomen: number
+  maxPerPlayer: number | null
+  division: string
+}
+
+export type LineupSetupPlayer = Entity & {
+  sex: 'M' | 'F' | null
+  team: Entity
+  teamMatches: number
+  matches: number
+  disciplines: string[]
+}
+
+export type LineupSetup = {
+  team: Entity
+  seasonId: number
+  format: LineupFormat
+  players: LineupSetupPlayer[]
+  higherTeam: {
+    team: Entity
+    lineup: {
+      matchId: number
+      seasonId: number
+      groupId: number
+      date: string
+      opponent: Entity
+      players: (Entity & { sex: 'M' | 'F' | null; slots: string[] })[]
+    } | null
+  } | null
+  otherTeams: Entity[]
+}
+
+export type LineupPoints = {
+  seasonId: number
+  points: Record<string, { id: number; club: string | null; single: number | null; double: number | null; mix: number | null; seasonId: number }>
+}

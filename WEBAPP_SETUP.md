@@ -51,6 +51,7 @@ Override the second with `BADMINTON_TEAM_DB_NAME`.
 - `/ligaer/:season` divisions and groups, `/ligaer/:season/:groupId` standings + rounds
 - `/kampe/:season/:groupId/:matchId` team match detail with every individual match
 - `/toplister` leaderboards (season, division and minimum-matches filters)
+- `/holdopstilling?hold=<slug>` lineup legality checker (beta): roster, availability, slots in the URL, checked against DH-reglementet §37-38
 
 Team slugs are derived from names: lower-case, `æ/ø/å` -> `ae/oe/aa`, everything else -> `-`.
 Player slugs add the badmintonplayer.dk player id as a suffix (`thomas-jensen-73557`), because
@@ -74,6 +75,8 @@ player with that name.
 - `GET /api/v2/groups/{league_group_id}?season=<year>`
 - `GET /api/v2/matches/{match_id}?season=<year>&group=<league_group_id>`
 - `GET /api/v2/leaderboards?season=<year>&division=<name>&min_matches=<n>` (omit `min_matches` to scale it to the season's progress)
+- `GET /api/v2/lineup/setup?team=<slug>` (roster with inferred sex, team format, club's higher team and its latest lineup)
+- `POST /api/v2/lineup/points` with `{"ids": [...]}` (current ranking points for up to 60 players, cached a day each)
 
 Responses are cached in-process for 10 minutes; `POST /api/v2/cache/clear` empties the cache after a data reload.
 The legacy psql-report endpoints under `/api/reports/*` still exist but are no longer used by the frontend.
