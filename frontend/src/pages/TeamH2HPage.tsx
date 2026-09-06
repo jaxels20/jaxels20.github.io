@@ -1,12 +1,12 @@
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { useTeamHeadToHead } from '../api'
-import { PairedBars } from '../components/charts'
+import { ButterflyBars } from '../components/charts'
 import { SearchBox } from '../components/SearchBox'
 import { SeasonPicker } from '../components/SeasonPicker'
 import { Card, EmptyState, ErrorState, FormPills, PageSkeleton, ResultBadge, TeamLink } from '../components/ui'
 import { useSeasonParam } from '../hooks/useSeasonParam'
-import { formatDate, formatPct, record, seasonLabel } from '../lib/format'
+import { disciplineName, formatDate, formatPct, record, seasonLabel } from '../lib/format'
 
 function CompareRow({
   label,
@@ -123,16 +123,15 @@ export function TeamH2HPage() {
                 <CompareRow label="3-sæts kampe" a={data.a.summary.threeSetWinPct} b={data.b.summary.threeSetWinPct} />
               </Card>
 
-              <Card title="Sejrsprocent pr. kamptype" subtitle="Hvor hvert hold er stærkest">
-                <PairedBars
+              <Card title="Styrke pr. kamptype" subtitle={`Sejrsprocent i enkeltkampe mod alle modstandere i ${seasonLabel(season).toLowerCase()}. Den stærkeste side er fremhævet.`}>
+                <ButterflyBars
                   names={[data.a.team.name, data.b.team.name]}
                   rows={mergeMatchTypes(data).map((row) => ({
                     key: row.matchType,
                     label: row.matchType,
-                    a: row.a?.winPct ?? null,
-                    b: row.b?.winPct ?? null,
-                    aLabel: row.a ? `${formatPct(row.a.winPct)} (${row.a.wins}–${row.a.losses})` : '–',
-                    bLabel: row.b ? `${formatPct(row.b.winPct)} (${row.b.wins}–${row.b.losses})` : '–',
+                    sub: disciplineName(row.code),
+                    a: row.a ? { wins: row.a.wins, losses: row.a.losses, winPct: row.a.winPct } : null,
+                    b: row.b ? { wins: row.b.wins, losses: row.b.losses, winPct: row.b.winPct } : null,
                   }))}
                 />
               </Card>
@@ -182,16 +181,16 @@ export function TeamH2HPage() {
                   <>
                     <div className="divider" style={{ margin: '0.9rem 0' }} />
                     <h3 style={{ marginBottom: '0.5rem' }}>Indbyrdes pr. kamptype</h3>
-                    <PairedBars
+                    <ButterflyBars
                       names={[data.a.team.name, data.b.team.name]}
                       rows={data.direct.byMatchType.map((t) => ({
                         key: t.matchType,
                         label: t.matchType,
-                        a: t.played ? (t.aWins / t.played) * 100 : null,
-                        b: t.played ? (t.bWins / t.played) * 100 : null,
-                        aLabel: `${t.aWins} sejre`,
-                        bLabel: `${t.bWins} sejre`,
+                        sub: `${t.played} ${t.played === 1 ? 'kamp' : 'kampe'}`,
+                        a: { wins: t.aWins, losses: t.bWins, winPct: t.played ? (t.aWins / t.played) * 100 : null },
+                        b: { wins: t.bWins, losses: t.aWins, winPct: t.played ? (t.bWins / t.played) * 100 : null },
                       }))}
+                      recordLabel={(side) => (side ? `${side.wins} ${side.wins === 1 ? 'sejr' : 'sejre'}` : '–')}
                     />
                   </>
                 )}
@@ -256,6 +255,7 @@ function mergeMatchTypes(data: NonNullable<ReturnType<typeof useTeamHeadToHead>[
     .sort((x, y) => x.number - y.number || x.order - y.order)
     .map((k) => ({
       matchType: k.matchType,
+      code: order[k.order] ?? '',
       a: data.a.byMatchType.find((r) => r.matchType === k.matchType),
       b: data.b.byMatchType.find((r) => r.matchType === k.matchType),
     }))

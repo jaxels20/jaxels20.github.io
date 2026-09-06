@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { usePlayerComparison } from '../api'
-import { PairedBars } from '../components/charts'
+import { ButterflyBars } from '../components/charts'
 import { SearchBox } from '../components/SearchBox'
 import { SeasonPicker } from '../components/SeasonPicker'
 import { Card, EmptyState, ErrorState, FormPills, PageSkeleton, PlayerLink, TeamLink } from '../components/ui'
@@ -188,23 +188,34 @@ export function PlayerComparePage() {
                 />
               </Card>
 
-              <Card title="Discipliner" subtitle="Sejrsprocent pr. disciplin">
-                <PairedBars
+              <Card title="Styrke pr. disciplin" subtitle="Sejrsprocent mod alle modstandere. Den stærkeste side er fremhævet.">
+                <ButterflyBars
                   names={[data.a.player.name, data.b.player.name]}
                   rows={mergeDisciplines(data.a.byDiscipline, data.b.byDiscipline).map((row) => ({
                     key: row.code,
-                    label: (
-                      <>
-                        {row.code}
-                        <small style={{ display: 'block', color: 'var(--text-3)', fontSize: '0.74rem' }}>{disciplineName(row.code)}</small>
-                      </>
-                    ),
-                    a: row.a?.winPct ?? null,
-                    b: row.b?.winPct ?? null,
-                    aLabel: row.a ? `${formatPct(row.a.winPct)} (${row.a.wins}–${row.a.losses})` : 'Ikke spillet',
-                    bLabel: row.b ? `${formatPct(row.b.winPct)} (${row.b.wins}–${row.b.losses})` : 'Ikke spillet',
+                    label: row.code,
+                    sub: disciplineName(row.code),
+                    a: row.a ? { wins: row.a.wins, losses: row.a.losses, winPct: row.a.winPct } : null,
+                    b: row.b ? { wins: row.b.wins, losses: row.b.losses, winPct: row.b.winPct } : null,
                   }))}
                 />
+                {data.meetings.played > 0 && (
+                  <>
+                    <div className="divider" style={{ margin: '0.9rem 0' }} />
+                    <h3 style={{ marginBottom: '0.5rem' }}>Indbyrdes pr. disciplin</h3>
+                    <ButterflyBars
+                      names={[data.a.player.name, data.b.player.name]}
+                      rows={meetingsByDiscipline(data.meetings.matches).map((row) => ({
+                        key: row.code,
+                        label: row.code,
+                        sub: `${row.played} ${row.played === 1 ? 'kamp' : 'kampe'}`,
+                        a: { wins: row.aWins, losses: row.played - row.aWins, winPct: (row.aWins / row.played) * 100 },
+                        b: { wins: row.played - row.aWins, losses: row.aWins, winPct: ((row.played - row.aWins) / row.played) * 100 },
+                      }))}
+                      recordLabel={(side) => (side ? `${side.wins} ${side.wins === 1 ? 'sejr' : 'sejre'}` : '–')}
+                    />
+                  </>
+                )}
               </Card>
 
               <Card title="Indbyrdes kampe" subtitle="Kampe hvor de to spillere stod på hver sin side af nettet">
@@ -260,6 +271,18 @@ export function PlayerComparePage() {
       )}
     </div>
   )
+}
+
+function meetingsByDiscipline(matches: PlayerMeeting[]) {
+  const order = ['HS', 'DS', 'HD', 'DD', 'MD', 'S', 'D']
+  const map = new Map<string, { code: string; played: number; aWins: number }>()
+  for (const m of matches) {
+    const row = map.get(m.code) ?? { code: m.code, played: 0, aWins: 0 }
+    row.played += 1
+    if (m.aWon) row.aWins += 1
+    map.set(m.code, row)
+  }
+  return [...map.values()].sort((x, y) => order.indexOf(x.code) - order.indexOf(y.code))
 }
 
 function mergeDisciplines(

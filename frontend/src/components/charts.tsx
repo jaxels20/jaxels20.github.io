@@ -114,6 +114,77 @@ export function WinLossBars({ rows, midline = 50 }: { rows: WinLossRow[]; midlin
   )
 }
 
+export type ButterflySide = { wins: number; losses: number; winPct: number | null } | null
+export type ButterflyRow = { key: string; label: ReactNode; sub?: ReactNode; a: ButterflySide; b: ButterflySide }
+
+/**
+ * Mirrored head-to-head bars: the category sits in the middle, side A grows to
+ * the left, side B to the right. The stronger side is drawn solid, the weaker one muted.
+ */
+export function ButterflyBars({
+  rows,
+  names,
+  valueLabel = (side) => (side && side.winPct !== null ? `${Math.round(side.winPct)} %` : '–'),
+  recordLabel = (side) => (side ? `${side.wins}–${side.losses}` : 'ikke spillet'),
+}: {
+  rows: ButterflyRow[]
+  names: [string, string]
+  valueLabel?: (side: ButterflySide) => string
+  recordLabel?: (side: ButterflySide) => string
+}) {
+  const [hover, setHover] = useState<string | null>(null)
+  if (!rows.length) return <div className="empty">Ingen data.</div>
+  const width = (side: ButterflySide) => `${Math.max(0, Math.min(100, side?.winPct ?? 0))}%`
+  return (
+    <div className="bf" role="list">
+      <div className="bf-head" aria-hidden="true">
+        <span className="bf-name bf-name-a">
+          <i /> {names[0]}
+        </span>
+        <span className="bf-center muted">Sejr %</span>
+        <span className="bf-name bf-name-b">
+          {names[1]} <i />
+        </span>
+      </div>
+      {rows.map((row) => {
+        const av = row.a?.winPct ?? null
+        const bv = row.b?.winPct ?? null
+        const aWins = av !== null && (bv === null || av > bv)
+        const bWins = bv !== null && (av === null || bv > av)
+        const active = hover === row.key
+        return (
+          <div
+            className={`bf-row ${active ? 'active' : ''}`.trim()}
+            role="listitem"
+            key={row.key}
+            onMouseEnter={() => setHover(row.key)}
+            onMouseLeave={() => setHover(null)}
+          >
+            <div className="bf-side bf-side-a">
+              <span className={`bf-value ${aWins ? 'win' : ''}`.trim()}>{valueLabel(row.a)}</span>
+              <div className="bf-track">
+                <div className={`bf-fill bf-fill-a ${aWins ? '' : 'dim'}`.trim()} style={{ width: width(row.a) }} />
+                <span className="bf-record">{recordLabel(row.a)}</span>
+              </div>
+            </div>
+            <div className="bf-center">
+              <span className="bf-label">{row.label}</span>
+              {row.sub && <small>{row.sub}</small>}
+            </div>
+            <div className="bf-side bf-side-b">
+              <div className="bf-track">
+                <div className={`bf-fill bf-fill-b ${bWins ? '' : 'dim'}`.trim()} style={{ width: width(row.b) }} />
+                <span className="bf-record">{recordLabel(row.b)}</span>
+              </div>
+              <span className={`bf-value ${bWins ? 'win' : ''}`.trim()}>{valueLabel(row.b)}</span>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export type PairRow = {
   key: string
   label: ReactNode
